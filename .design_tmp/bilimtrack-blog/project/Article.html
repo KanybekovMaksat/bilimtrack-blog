@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Как МУИТ перешёл на цифровое управление учебным процессом — Блог Bilimtrack</title>
+<meta property="og:title" content="Как МУИТ перешёл на цифровое управление учебным процессом">
+<meta property="og:description" content="Как международный университет автоматизировал расписание, журнал и оплату за один семестр.">
+<meta property="og:type" content="article">
+<link rel="stylesheet" href="assets/colors_and_type.css">
+<link rel="stylesheet" href="assets/blog.css">
+<link rel="stylesheet" href="assets/article.css">
+</head>
+<body>
+
+<div class="read-progress" id="readProgress"></div>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" href="Blog Home.html" aria-label="Bilimtrack">
+      <img src="assets/logo-mark.png" alt="">
+      <span class="brand__name">Bilimtrack</span>
+    </a>
+    <nav class="header-nav">
+      <a href="#">Возможности</a>
+      <a href="#">Цены</a>
+      <a href="Blog Home.html" class="is-active">Блог</a>
+    </nav>
+    <span class="header-spacer"></span>
+    <a class="btn btn--primary btn--sm" href="#demo">Получить демо<i data-ic="chevron-right"></i></a>
+  </div>
+</header>
+
+<main class="page container" data-screen-label="Article: МУИТ">
+  <div class="article-shell">
+    <article class="article-main">
+      <!-- Breadcrumbs -->
+      <nav class="crumbs">
+        <a href="Blog Home.html">Блог</a>
+        <i data-ic="chevron-right"></i>
+        <a href="Category.html?c=cases">Кейсы</a>
+        <i data-ic="chevron-right"></i>
+        <span>Как МУИТ перешёл на цифровое управление</span>
+      </nav>
+
+      <!-- Header -->
+      <header class="article-head">
+        <div class="article-head__meta">
+          <span class="tag tag--cases">Кейсы</span>
+          <span class="article-head__series"><i data-ic="book"></i>Серия: Цифровизация школы</span>
+        </div>
+        <h1>Как МУИТ перешёл на цифровое управление учебным процессом</h1>
+        <p class="article-standfirst">За один семестр университет перевёл расписание, журнал и оплату в одну систему — без срыва учебного года. Разбираем по шагам: что болело, как внедряли и что получилось в цифрах.</p>
+        <div class="article-byline">
+          <img src="assets/logo-mark.png" alt="">
+          <div class="article-byline__id">
+            <div class="article-byline__name"><b>Команда Bilimtrack</b><span class="verified" title="Проверено редакцией"><i data-ic="check"></i></span><span class="byline-role">Отдел внедрения</span></div>
+            <div class="byline-meta"><span><i data-ic="calendar"></i>15 января 2025</span><span class="dot"></span><span><i data-ic="clock"></i>8 мин чтения</span><span class="dot"></span><span>Кейс с цифрами</span></div>
+          </div>
+        </div>
+        <div class="share-row">
+          <span class="label">Поделиться:</span>
+          <a class="share-btn share-btn--tg" data-share="tg"><i data-ic="telegram"></i>Telegram</a>
+          <a class="share-btn share-btn--wa" data-share="wa"><i data-ic="whatsapp"></i>WhatsApp</a>
+          <button class="share-btn" data-share="copy"><i data-ic="link"></i><span data-copy-label>Скопировать ссылку</span></button>
+        </div>
+      </header>
+
+      <!-- Cover -->
+      <div class="article-cover" id="articleCover"></div>
+
+      <!-- Key takeaways -->
+      <aside class="article-takeaways">
+        <h2><i data-ic="sparkles"></i>Что вы узнаете из статьи</h2>
+        <ul>
+          <li><i data-ic="check"></i>Как поэтапно запустить расписание, журнал и оплату, не останавливая занятия</li>
+          <li><i data-ic="check"></i>Какие процессы отнимают больше всего времени — и как их автоматизировать</li>
+          <li><i data-ic="check"></i>Реальные результаты за первый семестр в цифрах: −70% бумаги, расписание за 2–3 дня</li>
+        </ul>
+      </aside>
+
+      <!-- Mobile TOC accordion -->
+      <details class="toc-mobile">
+        <summary>Содержание<i data-ic="chevron-down"></i></summary>
+        <ol id="tocMobileList"></ol>
+      </details>
+
+      <!-- Prose -->
+      <div class="prose" id="prose">
+        <p>Когда в Международном университете информационных технологий (МУИТ) набор вырос до полутора тысяч студентов, привычные таблицы и бумажные ведомости перестали справляться. Расписание собиралось вручную неделями, журнал жил в десятке разных файлов, а оплата сверялась с банковскими выписками задним числом.</p>
+        <p>В этом материале — как университет за один семестр перевёл расписание, журнал и оплату в единую систему, и что из этого вышло. Без приукрашивания: с тем, что получилось сразу, и с тем, что пришлось донастраивать по ходу.</p>
+
+        <h2 id="s1">С чего всё началось</h2>
+        <p>Поводом стал не глобальный план цифровизации, а конкретная боль. К началу учебного года деканат тратил почти три недели на то, чтобы свести расписание для 48 групп так, чтобы преподаватели не пересекались, а аудитории не дублировались. Любая замена запускала цепочку правок в нескольких документах.</p>
+        <p>Руководство сформулировало задачу просто: <strong>одна система, в которой расписание, журнал и финансы связаны между собой</strong>, а не лежат в параллельных мирах.</p>
+
+        <div class="callout">
+          <div class="callout__icon"><i data-ic="bolt"></i></div>
+          <div class="callout__body">
+            <b>Важно</b>
+            Цифровизация начинается не с покупки софта, а с честного списка того, что отнимает время у команды каждую неделю. Без этого списка любой инструмент превращается в ещё одну вкладку в браузере.
+          </div>
+        </div>
+
+        <aside class="lead-magnet" id="leadMagnet">
+          <div class="lead-magnet__main">
+            <span class="lead-magnet__eyebrow"><i data-ic="file-text"></i>Бесплатно · PDF</span>
+            <h3>Чек-лист цифровизации школы: 7 шагов</h3>
+            <ul class="lead-magnet__list">
+              <li><i data-ic="check"></i>С чего начать разговор с командой и как снять сопротивление</li>
+              <li><i data-ic="check"></i>Порядок запуска: расписание → журнал → оплата, без срыва учебного года</li>
+              <li><i data-ic="check"></i>Какие метрики смотреть, чтобы увидеть результат уже в первом семестре</li>
+            </ul>
+          </div>
+          <form class="lead-magnet__form" id="leadForm" novalidate>
+            <span class="lm-label">Пришлём на почту за минуту</span>
+            <label class="lead-magnet__field" id="leadField">
+              <i data-ic="mail"></i>
+              <input type="email" id="leadEmail" name="email" placeholder="Ваш e-mail" autocomplete="email" required>
+            </label>
+            <span class="lm-err">Введите корректный e-mail</span>
+            <button class="btn btn--primary" type="submit">Скачать чек-лист<i data-ic="download"></i></button>
+            <span class="lead-magnet__note"><i data-ic="shield-check"></i>Без спама — только материалы Bilimtrack.</span>
+          </form>
+          <div class="lead-magnet__success">
+            <span class="lm-check"><i data-ic="check"></i></span>
+            <b>Готово! Чек-лист отправлен</b>
+            <span id="leadSuccessMsg">Проверьте почту — письмо уже летит к вам.</span>
+          </div>
+        </aside>
+
+        <h2 id="s2">Что болело до Bilimtrack</h2>
+        <p>Прежде чем что-то менять, в университете описали реальные процессы. Картина оказалась знакомой для большинства учебных организаций:</p>
+        <ul>
+          <li><strong>Расписание</strong> жило в Excel, и каждая замена означала ручную правку в нескольких версиях файла.</li>
+          <li><strong>Журнал</strong> вёлся преподавателями по-разному — кто-то в тетради, кто-то в своей таблице.</li>
+          <li><strong>Оплата</strong> сверялась бухгалтерией вручную по банковским выпискам, с задержкой в несколько дней.</li>
+          <li><strong>Родители и студенты</strong> узнавали об оценках и долгах в последний момент.</li>
+        </ul>
+        <p>Отдельная проблема — прозрачность. Руководство не видело общую картину в реальном времени: чтобы ответить на вопрос «как идёт семестр», приходилось собирать данные из разных источников.</p>
+
+        <blockquote>
+          Мы не считали, сколько часов уходит на отчётность, пока не увидели цифру. Оказалось — почти две полные ставки занимались тем, что система делает автоматически.
+          <cite>— проректор по учебной работе, МУИТ</cite>
+        </blockquote>
+
+        <div class="cta-inline">
+          <div class="cta-inline__text">
+            <b>Хотите посмотреть, как это работает в вашей организации?</b>
+            <span>Покажем расписание, журнал и оплату на живом примере — за 20 минут.</span>
+          </div>
+          <a class="btn btn--primary" href="#demo">Получить демо<i data-ic="chevron-right"></i></a>
+        </div>
+
+        <h2 id="s3">Как проходило внедрение</h2>
+        <p>Запуск разбили на три этапа и сознательно не пытались включить всё сразу. Это снизило сопротивление команды и позволило отладить каждый блок отдельно.</p>
+
+        <h3>Этап 1. Расписание</h3>
+        <p>Сначала в систему перенесли структуру: дисциплины, группы, преподавателей и аудитории. Расписание с чередованием недель (числитель и знаменатель) теперь собирается с проверкой конфликтов — система сама подсвечивает пересечения.</p>
+
+        <aside class="cta-module">
+          <span class="cta-module__icon"><i data-ic="calendar"></i></span>
+          <p class="cta-module__text"><b>Это модуль «Расписание» в Bilimtrack.</b> Сетка с числителем и знаменателем, замены и автоматическая проверка конфликтов — соберите расписание своих групп на демо.</p>
+          <a class="cta-module__link" href="#demo">Попробовать<i data-ic="chevron-right"></i></a>
+        </aside>
+
+        <h3>Этап 2. Электронный журнал</h3>
+        <p>Преподаватели получили единый журнал с понятной шкалой оценок. Привычные пятибалльные оценки и отметки посещаемости выставляются в пару кликов, а итоги по модулю считаются автоматически.</p>
+
+        <figure>
+          <div id="figJournal"></div>
+          <figcaption>Журнал в Bilimtrack: оценки и посещаемость в одной сетке, итоги по модулю считаются автоматически.</figcaption>
+        </figure>
+
+        <aside class="cta-module">
+          <span class="cta-module__icon"><i data-ic="list"></i></span>
+          <p class="cta-module__text"><b>Это модуль «Электронный журнал».</b> Пятибалльные оценки и посещаемость в пару кликов, итоги по модулю считаются сами — посмотрите на примере своего предмета.</p>
+          <a class="cta-module__link" href="#demo">Открыть демо<i data-ic="chevron-right"></i></a>
+        </aside>
+
+        <h3>Этап 3. Оплата</h3>
+        <p>Последним подключили финансовый модуль. Родители видят сумму и срок оплаты в приложении, а бухгалтерия — статус платежей в реальном времени. Сверка по выпискам ушла в прошлое.</p>
+
+        <p>Для интеграции с внутренними сервисами университета использовали выгрузку в стандартном формате — буквально одна строка в настройках экспорта:</p>
+        <pre><code>export --module=finance --format=csv --period=current</code></pre>
+
+        <aside class="cta-module">
+          <span class="cta-module__icon"><i data-ic="credit-card"></i></span>
+          <p class="cta-module__text"><b>Это модуль «Онлайн-оплата».</b> Родители платят прямо из приложения, а бухгалтерия видит статус платежей в реальном времени — подключим к вашим реквизитам.</p>
+          <a class="cta-module__link" href="#demo">Как это работает<i data-ic="chevron-right"></i></a>
+        </aside>
+
+        <h2 id="s4">Результаты за первый семестр</h2>
+        <p>Главный эффект — время. То, что раньше требовало недель и нескольких сотрудников, теперь происходит в фоне. Ниже — измеримые изменения по итогам первого семестра работы.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Показатель</th><th>До</th><th>После</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Сборка расписания</td><td>≈ 3 недели</td><td>2–3 дня</td></tr>
+              <tr><td>Бумажная отчётность</td><td>100%</td><td>−70%</td></tr>
+              <tr><td>Сверка оплат</td><td>3–5 дней</td><td>в реальном времени</td></tr>
+              <tr><td>Прозрачность для родителей</td><td>раз в семестр</td><td>ежедневно</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout--ok">
+          <div class="callout__icon"><i data-ic="check"></i></div>
+          <div class="callout__body">
+            <b>Что сработало лучше всего</b>
+            Поэтапный запуск. Команда успевала привыкнуть к каждому блоку, прежде чем подключался следующий — поэтому не было ощущения, что «всё сломали и заставили работать по-новому».
+          </div>
+        </div>
+
+        <h2 id="s5">Что дальше</h2>
+        <p>Сейчас университет подключает аналитику по успеваемости и геймификацию для студентов — рейтинги и баллы, которые в других организациях заметно поднимают вовлечённость. Но главный вывод команды проще:</p>
+        <p>Цифровизация — это не про то, чтобы «внедрить систему». Это про то, чтобы вернуть людям время, которое раньше уходило на рутину, и сделать процессы видимыми. Всё остальное — следствие.</p>
+      </div>
+
+      <!-- Final CTA -->
+      <section class="cta-final" id="demo">
+        <div class="cta-final__inner">
+          <span class="cta-final__proof"><i data-ic="users"></i>Уже <b>340 организаций</b> перешли на Bilimtrack</span>
+          <h2>Переведите свою организацию на цифровое управление — как это сделал МУИТ</h2>
+          <p>Расписание, журнал, оплата и общение с родителями в одной системе. <span class="free">Первые 3 месяца — бесплатно.</span></p>
+          <div class="cta-final__actions">
+            <a class="btn btn--primary" href="#">Получить демо<i data-ic="chevron-right"></i></a>
+            <a class="btn btn--outline" href="#">Посмотреть цены</a>
+          </div>
+          <div class="cta-final__stats">
+            <div class="cta-final__stat"><div class="num">340+</div><span class="lbl">школ, колледжей и вузов</span></div>
+            <div class="cta-final__stat"><div class="num">−70%</div><span class="lbl">бумажной отчётности</span></div>
+            <div class="cta-final__stat"><div class="num">2–3 дня</div><span class="lbl">на сборку расписания</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Related -->
+      <section class="related">
+        <div class="section-label"><h2>Читать также</h2></div>
+        <div class="card-grid" id="relatedGrid"></div>
+      </section>
+    </article>
+
+    <!-- Sticky sidebar -->
+    <aside class="article-aside">
+      <nav class="toc side-block">
+        <h4 class="side-block__title">Содержание</h4>
+        <ul id="tocList"></ul>
+      </nav>
+
+      <div class="cta-card">
+        <img class="cta-card__mascot" src="assets/mascot-panda.png" alt="">
+        <h3>Получить демо Bilimtrack</h3>
+        <p>Покажем систему на примере вашей организации.</p>
+        <a class="btn btn--primary" href="#demo">Получить демо<i data-ic="chevron-right"></i></a>
+      </div>
+
+      <div class="side-block">
+        <h4 class="side-block__title">Поделиться</h4>
+        <div class="aside-share">
+          <a class="share-btn share-btn--tg" data-share="tg" title="Telegram"><i data-ic="telegram"></i></a>
+          <a class="share-btn share-btn--wa" data-share="wa" title="WhatsApp"><i data-ic="whatsapp"></i></a>
+          <button class="share-btn" data-share="copy" title="Скопировать ссылку"><i data-ic="link"></i></button>
+        </div>
+      </div>
+
+      <div class="side-block">
+        <h4 class="side-block__title">Популярные статьи</h4>
+        <div class="popular-list" id="popularList"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <a class="brand" href="Blog Home.html"><img src="assets/logo-mark.png" alt="" style="width:28px;height:28px"><span class="brand__name">Bilimtrack</span></a>
+    <nav class="site-footer__links">
+      <a href="#">Возможности</a>
+      <a href="#">Цены</a>
+      <a href="Blog Home.html">Блог</a>
+      <a href="#demo">Демо</a>
+    </nav>
+    <span class="site-footer__legal">Разработано OurEra Soft</span>
+  </div>
+</footer>
+
+<script src="assets/icons-inline.js"></script>
+<script src="assets/blog.js"></script>
+<script>
+(function () {
+  const muit = ARTICLES.find(a => a.slug === "muit-cifrovoe-upravlenie") || ARTICLES[0];
+
+  // Cover + an in-body figure mock
+  document.getElementById("articleCover").innerHTML = coverHTML(muit);
+  document.getElementById("figJournal").innerHTML = coverHTML(muit);
+
+  // Related (exclude current)
+  const related = ARTICLES.filter(a => a.slug !== muit.slug).slice(0, 3);
+  document.getElementById("relatedGrid").innerHTML = related.map(cardHTML).join("");
+
+  // Popular in sidebar
+  const popular = ARTICLES.filter(a => a.popular && a.slug !== muit.slug).slice(0, 4);
+  document.getElementById("popularList").innerHTML = popular.map((a, i) => `
+    <a class="popular-item" href="${articleHref(a)}">
+      <span class="popular-item__num">${i + 1}</span>
+      <span><span class="popular-item__title">${a.title}</span><span class="popular-item__meta">${a.read} мин чтения</span></span>
+    </a>`).join("");
+
+  // Build TOC from h2 headings
+  const heads = [...document.querySelectorAll(".prose h2")];
+  const tocHTML = heads.map((h, i) => `<li><a href="#${h.id}" data-toc="${h.id}">${i + 1}. ${h.textContent}</a></li>`).join("");
+  document.getElementById("tocList").innerHTML = tocHTML;
+  document.getElementById("tocMobileList").innerHTML = heads.map((h, i) => `<li><a href="#${h.id}">${i + 1}. ${h.textContent}</a></li>`).join("");
+
+  // Scroll-spy
+  const tocLinks = [...document.querySelectorAll("#tocList a")];
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        tocLinks.forEach(l => l.classList.toggle("is-active", l.dataset.toc === id));
+      }
+    });
+  }, { rootMargin: "-88px 0px -65% 0px", threshold: 0 });
+  heads.forEach(h => spy.observe(h));
+
+  // Reading progress
+  const bar = document.getElementById("readProgress");
+  const article = document.querySelector(".article-main");
+  function onScroll() {
+    const top = article.offsetTop;
+    const h = article.offsetHeight - window.innerHeight;
+    const p = Math.min(1, Math.max(0, (window.scrollY - top + 120) / h));
+    bar.style.width = (p * 100) + "%";
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  // Share
+  const url = location.href;
+  const title = document.title;
+  document.querySelectorAll('[data-share]').forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const kind = btn.dataset.share;
+      if (kind === "tg") window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, "_blank");
+      else if (kind === "wa") window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + url)}`, "_blank");
+      else {
+        navigator.clipboard?.writeText(url);
+        const lbl = btn.querySelector("[data-copy-label]");
+        if (lbl) { const old = lbl.textContent; lbl.textContent = "Ссылка скопирована"; setTimeout(() => lbl.textContent = old, 1600); }
+      }
+    });
+  });
+
+  // Lead magnet — checklist capture
+  const leadForm = document.getElementById("leadForm");
+  const leadMagnet = document.getElementById("leadMagnet");
+  const leadField = document.getElementById("leadField");
+  const leadEmail = document.getElementById("leadEmail");
+  const leadMsg = document.getElementById("leadSuccessMsg");
+  const LEAD_KEY = "bt_lead_" + muit.slug;
+  const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  if (leadForm) {
+    const saved = localStorage.getItem(LEAD_KEY);
+    if (saved) {
+      leadMagnet.classList.add("is-done");
+      leadMsg.textContent = "Письмо отправлено на " + saved + ". Проверьте почту.";
+    }
+    leadEmail.addEventListener("input", () => {
+      leadForm.classList.remove("is-invalid");
+      leadField.classList.remove("is-error");
+    });
+    leadForm.addEventListener("submit", e => {
+      e.preventDefault();
+      const v = leadEmail.value.trim();
+      if (!validEmail(v)) {
+        leadForm.classList.add("is-invalid");
+        leadField.classList.add("is-error");
+        leadEmail.focus();
+        return;
+      }
+      localStorage.setItem(LEAD_KEY, v);
+      leadMsg.textContent = "Письмо отправлено на " + v + ". Проверьте почту.";
+      leadMagnet.classList.add("is-done");
+    });
+  }
+})();
+</script>
+<div id="tweaks-root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="assets/tweaks-panel.jsx"></script>
+<script type="text/babel" src="assets/tweaks-app.jsx"></script>
+</body>
+</html>

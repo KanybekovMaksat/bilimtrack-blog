@@ -1,0 +1,204 @@
+/* ============================================================
+   BILIMTRACK — Colors & Type foundations
+   Educational ecosystem by OurEra Soft (RU/KZ school platform)
+   Source of truth: ui/ codebase (Tailwind v4 tokens) + Figma
+   ============================================================ */
+
+/* ---- Fonts ----
+   Primary UI:  TikTok Sans  (Google Fonts)
+   Secondary:   Inter        (Google Fonts) — used for tabular/numeric
+   Display num: "EFour Digital Pro" — NOT on Google Fonts; substituted
+                with a techy mono fallback (see --font-display). FLAG.
+   NOTE: the Google Fonts <link> is loaded in pages/_document.tsx so the
+   @import does not fight Tailwind v4's import ordering. */
+
+:root {
+  /* ===== RAW PALETTE ===== */
+  /* Neutrals (Tailwind neutral scale — the spine of the whole UI) */
+  --neutral-0:   #ffffff;
+  --neutral-50:  #fafafa;
+  --neutral-100: #f5f5f5;  /* surfaces, fills — the single most-used color */
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a1a1a1;  /* subtle text, placeholders */
+  --neutral-500: #737373;  /* muted text */
+  --neutral-600: #525252;
+  --neutral-700: #404040;  /* strong stroke / inverse */
+  --neutral-800: #262626;  /* dark surfaces, inverse bg, dark buttons */
+  --neutral-900: #171717;
+  --black:       #000000;
+
+  /* Brand blue — the primary accent (buttons, links, active states).
+     theme-brand-* maps to Tailwind blue-*; brand-600 (#155dfc) is THE brand color. */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-400: #51a2ff;
+  --blue-500: #2b7fff;  /* btn-primary HOVER (lighter) */
+  --blue-600: #155dfc;  /* brand-600 — primary button, brand text/icon/stroke */
+  --blue-700: #1447e6;
+
+  /* Semantic colors */
+  --green-500: #00c951; /* grade-5 fill */
+  --green-600: #00a63e; /* success text */
+  --green-100: #b9f8cf;
+  --green-950: #052e16;
+  --red-500:   #fb2c36; /* error / grade-2 */
+  --red-600:   #e7000b;
+  --red-50:    #fef2f2;
+  --amber-500: #fd9a00; /* text-warning, grade-B text */
+  --amber-50:  #fffbeb;
+  --orange-400:#ff8904; /* gamification RATING main (text+surface) */
+  --orange-50: #fff7ed; /* rating subtle surface */
+  --orange-500:#ff6900; /* streak gradient end */
+  --gold:      #ffba00; /* streak gradient start */
+  --purple-500:#ad46ff; /* grade-3 / grade-C accent */
+  --purple-50: #faf5ff;
+  --cyan-400:  #53eafd; /* decorative / streak glow */
+
+  /* ===== SEMANTIC SURFACES ===== */
+  --surface-lowest:  #ffffff;  /* cards, sheets */
+  --surface-middle:  #f5f5f5;  /* inputs, chips, hover fills */
+  --surface-inverse: #262626;  /* dark login, tooltips (= base-800 dark bg) */
+  --surface-subtle:  #eff6ff;  /* brand-50 tint */
+  --surface-app:     #ffffff;  /* app background */
+
+  /* ===== TEXT ===== */
+  --text-primary:     #0a0a0a;
+  --text-muted:       #737373;
+  --text-subtle:      #a1a1a1;
+  --text-placeholder: #a1a1a1;
+  --text-brand:       #155dfc;
+  --text-error:       #fb2c36;
+  --text-success:     #00a63e;
+  --text-warning:     #fd9a00;
+  --text-disabled:    #d4d4d4;
+  --text-on-solid:    #ffffff;  /* on dark / colored fills */
+  --text-inverse:     #ffffff;
+
+  /* ===== ICON ===== */
+  --icon-primary:  #0a0a0a;
+  --icon-muted:    #a1a1a1;
+  --icon-brand:    #155dfc;
+  --icon-error:    #fb2c36;
+  --icon-on-solid: #ffffff;
+
+  /* ===== STROKE / BORDER ===== */
+  --stroke-primary:   #e5e5e5;
+  --stroke-secondary: #f5f5f5;
+  --stroke-inverse:   #000000;  /* black border on input focus-within */
+  --stroke-brand:     #155dfc;
+  --stroke-error:     #fb2c36;
+  --stroke-focus:     #7ee7fc;  /* cyan-300 focus ring */
+  --separator-primary:   #fafafa; /* base-50 — quiet dividers */
+  --separator-secondary: #e5e5e5; /* base-200 */
+  /* warm gradient stroke — premium avatar/image edges (e.g. top-rated) */
+  --stroke-gradient: linear-gradient(to bottom, #feac5e, #c779d0);
+
+  /* ===== BUTTONS ===== */
+  --btn-primary-default:   #155dfc;  /* brand-600 */
+  --btn-primary-hover:     #2b7fff;  /* brand-500 (lighter on hover) */
+  --btn-secondary-default: #f5f5f5;
+  --btn-secondary-hover:   #e5e5e5;
+  --btn-error-default:     #fb2c36;
+  --btn-error-hover:       #e7000b;
+  --btn-outline-default:   #f5f5f5;  /* base-100 */
+
+  /* ===== BADGES ===== */
+  --badge-primary:   #155dfc;
+  --badge-secondary: #a1a1a1;  /* base-400 */
+  --badge-error:     #fb2c36;
+  --badge-success:   #00c951;
+  --badge-inverse:   #000000;
+  --badge-outline:   #f5f5f5;
+
+  /* ===== GRADE SYSTEM (5-point + letter visit marks) ===== */
+  --grade-5-surface: #00c951; --grade-5-onsolid: #ffffff; /* excellent */
+  --grade-4-surface: #155dfc; --grade-4-onsolid: #ffffff; /* good = brand-600 */
+  --grade-3-surface: #ad46ff; --grade-3-onsolid: #ffffff; /* average */
+  --grade-2-surface: #fb2c36; --grade-2-onsolid: #ffffff; /* poor */
+  --grade-a-surface: #eff6ff; --grade-a-onsolid: #155dfc; /* present */
+  --grade-b-surface: #fffbeb; --grade-b-onsolid: #fd9a00; /* late */
+  --grade-c-surface: #faf5ff; --grade-c-onsolid: #ad46ff; /* excused */
+  --grade-n-surface: #fef2f2; --grade-n-onsolid: #fb2c36; /* absent */
+
+  /* ===== GAMIFICATION ===== */
+  --gami-rating-text:           #ff8904;  /* trophy / rating = orange-400 */
+  --gami-rating-surface:        #ff8904;
+  --gami-rating-surface-subtle: #fff7ed;
+  --gami-points-text:           #155dfc;  /* bolt / points = blue-600 */
+  --gami-points-surface:        #155dfc;
+  --gami-points-surface-subtle: #eff6ff;
+  --gami-streak-gradient: linear-gradient(180deg, #ffba00 0%, #ff6900 100%); /* flame */
+
+  /* ===== ELEVATION / RADII (see VISUAL FOUNDATIONS) ===== */
+  --soft-shadow: rgba(0,0,0,0.08);
+  --shadow-toggle: 0 0 8px 0 var(--soft-shadow);
+  --shadow-card:   0 1px 2px 0 rgba(0,0,0,0.04);
+  --shadow-pop:    0 8px 24px -6px rgba(0,0,0,0.12);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;   /* big cards / sheets */
+  --radius-full: 9999px; /* pills, buttons, inputs, chips, avatars-max */
+
+  /* ===== FONT FAMILIES ===== */
+  --font-ui:      "TikTok Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-numeric: "Inter", "TikTok Sans", sans-serif;
+  --font-display: "Orbitron", "TikTok Sans", monospace; /* SUBSTITUTE for EFour Digital Pro */
+}
+
+/* ============================================================
+   TYPE SCALE — mirrors ui/typography.tsx variants
+   ============================================================ */
+:root {
+  --fs-headline-sm:  20px;  --lh-headline-sm:  26px;  /* h1 / screen & article titles */
+  --fs-title-lg:     16px;  --lh-title-lg:     22px;  /* card titles, list names */
+  --fs-title-md:     14px;  --lh-title-md:     18px;
+  --fs-label-lg:     16px;  --lh-label-lg:     22px;  /* buttons (lg) */
+  --fs-label-md:     14px;  --lh-label-md:     18px;  /* buttons, tabs */
+  --fs-label-sm:     12px;  --lh-label-sm:     16px;
+  --fs-subheadline-lg:16px; --lh-subheadline-lg:22px;
+  --fs-subheadline-md:14px; --lh-subheadline-md:18px; /* default body voice */
+  --fs-subheadline-sm:12px; --lh-subheadline-sm:16px; /* captions, meta */
+  --fs-subheadline-xs:10px; --lh-subheadline-xs:14px; /* tiny labels (weekday) */
+  --fs-body-md:      16px;  --lh-body-md:      22px;  /* feed posts, messages */
+  --fs-body-sm:      14px;  --lh-body-sm:      20px;
+  --fs-callout-lg:   16px;  --lh-callout-lg:   22px;  /* emphasis numbers */
+  --fs-callout-md:   14px;  --lh-callout-md:   18px;
+  --fs-callout-sm:   12px;  --lh-callout-sm:   16px;
+}
+
+/* Base */
+html { font-family: var(--font-ui); }
+body { color: var(--text-primary); background: var(--surface-app); -webkit-font-smoothing: antialiased; }
+
+/* ---- Semantic type classes (drop-in) ---- */
+.t-headline-sm { font-size: var(--fs-headline-sm); line-height: var(--lh-headline-sm); font-weight: 600; letter-spacing: -0.01em; }
+.t-title-lg    { font-size: var(--fs-title-lg);   line-height: var(--lh-title-lg);   font-weight: 500; }
+.t-title-md    { font-size: var(--fs-title-md);   line-height: var(--lh-title-md);   font-weight: 500; }
+.t-label-lg    { font-size: var(--fs-label-lg);   line-height: var(--lh-label-lg);   font-weight: 500; }
+.t-label-md    { font-size: var(--fs-label-md);   line-height: var(--lh-label-md);   font-weight: 500; }
+.t-label-sm    { font-size: var(--fs-label-sm);   line-height: var(--lh-label-sm);   font-weight: 500; }
+.t-sub-lg      { font-size: var(--fs-subheadline-lg); line-height: var(--lh-subheadline-lg); font-weight: 400; }
+.t-sub-md      { font-size: var(--fs-subheadline-md); line-height: var(--lh-subheadline-md); font-weight: 400; }
+.t-sub-sm      { font-size: var(--fs-subheadline-sm); line-height: var(--lh-subheadline-sm); font-weight: 400; }
+.t-sub-xs      { font-size: var(--fs-subheadline-xs); line-height: var(--lh-subheadline-xs); font-weight: 400; }
+.t-body-md     { font-size: var(--fs-body-md);    line-height: var(--lh-body-md);    font-weight: 400; }
+.t-body-sm     { font-size: var(--fs-body-sm);    line-height: var(--lh-body-sm);    font-weight: 400; }
+.t-callout-lg  { font-size: var(--fs-callout-lg); line-height: var(--lh-callout-lg); font-weight: 600; }
+.t-callout-md  { font-size: var(--fs-callout-md); line-height: var(--lh-callout-md); font-weight: 600; }
+.t-callout-sm  { font-size: var(--fs-callout-sm); line-height: var(--lh-callout-sm); font-weight: 600; }
+
+/* ---- Icon utility (mask-tinted inline SVG; renders reliably everywhere) ----
+   Usage: <i class="icon" style="--i:url(assets/icons/trophy.svg)"></i>
+   Tint with `color`; size with width/height (default 24px). */
+.icon{display:inline-block;width:24px;height:24px;flex-shrink:0;background:currentColor;
+  -webkit-mask:var(--i) center/contain no-repeat; mask:var(--i) center/contain no-repeat;
+  vertical-align:-0.15em;}
+
+/* color helpers */
+.c-primary{color:var(--text-primary);} .c-muted{color:var(--text-muted);}
+.c-subtle{color:var(--text-subtle);}   .c-brand{color:var(--text-brand);}
+.c-error{color:var(--text-error);}      .c-success{color:var(--text-success);}
+.c-warning{color:var(--text-warning);}  .c-onsolid{color:var(--text-on-solid);}

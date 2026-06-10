@@ -1,0 +1,38 @@
+/* ============================================================
+   BILIMTRACK — app-level glue
+   Bridges the ported design system with Next.js + HeroUI:
+   - makes the design typeface (TikTok Sans) the app font
+   - re-themes HeroUI's accent tokens to the Bilimtrack brand
+     so any HeroUI component (Button, Select, Tabs, Toast…)
+     renders on-brand without extra styling.
+   ============================================================ */
+
+:root {
+  /* HeroUI v3 reads these for `variant="primary"` (button--primary etc.) */
+  --accent: var(--blue-600);            /* brand-600 #155dfc */
+  --accent-hover: var(--blue-500);      /* #2b7fff */
+  --accent-foreground: #ffffff;
+  --accent-soft: var(--surface-subtle); /* brand-50 tint */
+  --accent-soft-foreground: var(--text-primary);
+}
+
+/* Body + Next.js font wiring — the design system owns the typeface. */
+html,
+body {
+  font-family: var(--font-ui);
+  background: var(--surface-app);
+  color: var(--text-primary);
+}
+
+/* Next root wrapper should never constrain the full-bleed layouts. */
+#__next {
+  min-height: 100vh;
+}
+
+/* Size the HeroUI <Avatar> to the design's 34px editor-profile slot. */
+.admin-nav__user .admin-nav__avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+}
+

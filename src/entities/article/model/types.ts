@@ -1,0 +1,26 @@
+import type { ArticleCategory } from "@/entities/category";
+
+/** Styled placeholder cover scenes (abstract product mocks). */
+export type CoverScene =
+  | "journal"
+  | "schedule"
+  | "rating"
+  | "chat"
+  | "stats"
+  | "news"
+  | "brand";
+
+export interface Article {
+  slug: string;
+  cat: ArticleCategory;
+  cover: CoverScene;
+  title: string;
+  date: string;
+  iso: string;
+  /** Reading time in minutes. */
+  read: number;
+  featured?: boolean;
+  popular?: boolean;
+  excerpt: string;
+  content?: string;
+}

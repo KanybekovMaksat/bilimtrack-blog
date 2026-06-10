@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Редактор статьи — Bilimtrack</title>
+<link rel="stylesheet" href="assets/colors_and_type.css">
+<link rel="stylesheet" href="assets/blog.css">
+<link rel="stylesheet" href="assets/article.css">
+<link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+<div class="admin-body" data-screen-label="Admin: Editor">
+
+  <!-- LEFT NAV -->
+  <nav class="admin-nav">
+    <a class="brand" href="Blog Home.html">
+      <img src="assets/logo-mark.png" alt="">
+      <span>
+        <span class="brand__name" style="display:block;line-height:1.1">Bilimtrack</span>
+        <span class="brand__sub">Редакция блога</span>
+      </span>
+    </a>
+
+    <div class="nav-section">Контент</div>
+    <div class="nav-item"><i data-ic="file-text"></i>Статьи<span class="badge">10</span></div>
+    <div class="nav-item is-active"><i data-ic="pencil"></i>Новая статья</div>
+    <div class="nav-item"><i data-ic="tag"></i>Категории<span class="badge">4</span></div>
+    <div class="nav-item"><i data-ic="photo"></i>Медиа</div>
+
+    <div class="nav-section">Аналитика</div>
+    <div class="nav-item"><i data-ic="chart-bar"></i>Статистика</div>
+    <div class="nav-item"><i data-ic="users"></i>Авторы</div>
+
+    <div class="admin-nav__spacer"></div>
+
+    <div class="nav-item"><i data-ic="settings"></i>Настройки</div>
+    <div class="admin-nav__user">
+      <img src="assets/avatar-default.png" alt="">
+      <span><b>А. Усенова</b><span>Главный редактор</span></span>
+    </div>
+    <div class="admin-nav__legal">Разработано OurEra Soft</div>
+  </nav>
+
+  <!-- CENTER -->
+  <div class="editor-col">
+    <div class="editor-topbar">
+      <a class="topbar-back" href="Blog Home.html"><i data-ic="arrow-left"></i><span class="lbl">К блогу</span></a>
+      <span class="topbar-crumb">Статьи&nbsp; /&nbsp; <b>Новая статья</b></span>
+      <span class="topbar-spacer"></span>
+      <span class="save-status" id="saveStatus"><i data-ic="device-floppy"></i><span class="lbl" id="saveText">Черновик сохранён</span></span>
+      <a class="btn btn--outline btn--sm" id="previewBtn"><i data-ic="external-link"></i><span class="lbl">Предпросмотр</span></a>
+      <button class="btn btn--primary btn--sm" id="publishBtn">Опубликовать</button>
+    </div>
+
+    <div class="editor-scroll">
+      <div class="editor-canvas">
+        <!-- Cover -->
+        <div class="cover-slot" id="coverSlot">
+          <div class="cover-slot__hint"><i data-ic="photo"></i>Добавить обложку 16:9</div>
+          <span class="cover-slot__edit"><i data-ic="photo"></i>Изменить</span>
+        </div>
+
+        <div class="editor-metarow">
+          <span class="tag" id="catTagPreview">Категория</span>
+        </div>
+
+        <textarea class="title-input" id="titleInput" rows="1" placeholder="Заголовок статьи"></textarea>
+        <textarea class="excerpt-input" id="excerptInput" rows="2" placeholder="Краткое описание — 1–2 строки, появится в карточке и превью для Telegram"></textarea>
+
+        <!-- Toolbar -->
+        <div class="editor-toolbar" id="toolbar">
+          <button class="tb-btn" data-cmd="formatBlock" data-val="h2" title="Заголовок раздела">H2</button>
+          <button class="tb-btn" data-cmd="formatBlock" data-val="h3" title="Подзаголовок">H3</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-cmd="bold" title="Жирный"><i data-ic="bold"></i></button>
+          <button class="tb-btn" data-cmd="italic" title="Курсив"><i data-ic="italic"></i></button>
+          <button class="tb-btn" data-cmd="createLink" title="Ссылка"><i data-ic="link"></i></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-cmd="insertUnorderedList" title="Маркированный список"><i data-ic="list"></i></button>
+          <button class="tb-btn" data-cmd="insertOrderedList" title="Нумерованный список"><i data-ic="list-numbers"></i></button>
+          <button class="tb-btn" data-cmd="formatBlock" data-val="blockquote" title="Цитата"><i data-ic="quote"></i></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-ins="callout" title="Важная заметка"><i data-ic="bolt"></i></button>
+          <button class="tb-btn" data-ins="cta" title="Блок призыва к демо"><i data-ic="sparkles"></i></button>
+          <button class="tb-btn" data-ins="image" title="Изображение"><i data-ic="photo"></i></button>
+          <button class="tb-btn tb-btn--ai" data-ins="ai" title="Сгенерировать черновик"><i data-ic="sparkles"></i>Помощник</button>
+        </div>
+
+        <!-- Editable body -->
+        <div class="editor-body prose" id="editorBody" contenteditable="true"
+             data-placeholder="Начните писать статью… Используйте панель сверху для заголовков, списков, цитат и блоков с призывом к демо."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT — settings -->
+  <aside class="settings-rail">
+    <div class="rail-actions">
+      <button class="btn btn--secondary btn--sm" id="saveDraftBtn"><i data-ic="device-floppy"></i>Сохранить</button>
+      <button class="btn btn--primary btn--sm" id="publishBtn2">Опубликовать</button>
+    </div>
+
+    <div class="rail-block">
+      <p class="rail-label">Статус</p>
+      <div class="segment" id="statusSeg">
+        <button data-v="draft" class="is-active"><span class="dot"></span>Черновик</button>
+        <button data-v="published"><span class="dot"></span>Опубликовано</button>
+      </div>
+    </div>
+
+    <div class="rail-block">
+      <p class="rail-label"><i data-ic="tag"></i>Категория</p>
+      <select class="field-select" id="catSelect">
+        <option value="cases">Кейсы</option>
+        <option value="manage">Управление школой</option>
+        <option value="advice">Советы директору</option>
+        <option value="news">Новости</option>
+      </select>
+    </div>
+
+    <div class="rail-block">
+      <p class="rail-label"><i data-ic="clock"></i>Время чтения</p>
+      <div class="readtime">
+        <span class="readtime__num" id="readNum">1</span>
+        <span class="readtime__lbl"><b id="wordCount">0 слов</b>считается автоматически<br>(~200 слов / мин)</span>
+      </div>
+    </div>
+
+    <div class="rail-block">
+      <p class="rail-label"><i data-ic="calendar"></i>Публикация</p>
+      <div class="field">
+        <input type="date" class="field-input" id="pubDate">
+      </div>
+      <div class="field">
+        <div class="field-slug">
+          <span class="pfx">/blog/</span>
+          <input id="slugInput" placeholder="url-statyi">
+        </div>
+        <div class="field-hint"><span>Канонический URL</span><span id="slugAuto" class="ok">авто</span></div>
+      </div>
+    </div>
+
+    <div class="rail-block">
+      <p class="rail-label"><i data-ic="photo"></i>Обложка</p>
+      <div class="cover-presets" id="coverPresets"></div>
+    </div>
+
+    <div class="rail-block">
+      <p class="rail-label">SEO и превью</p>
+      <div class="field">
+        <input class="field-input" id="seoTitle" placeholder="Title для поиска">
+        <div class="field-hint"><span>Заголовок в Google</span><span id="seoTitleCount">0 / 60</span></div>
+      </div>
+      <div class="field">
+        <textarea class="field-textarea" id="seoDesc" placeholder="Описание для Telegram и WhatsApp"></textarea>
+        <div class="field-hint"><span>OG-описание</span><span id="seoDescCount">0 / 160</span></div>
+      </div>
+    </div>
+
+    <div class="rail-block">
+      <button class="rail-danger"><i data-ic="trash"></i>Удалить черновик</button>
+    </div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"><i data-ic="check"></i><span id="toastText">Готово</span></div>
+
+<script src="assets/icons-inline.js"></script>
+<script src="assets/admin-icons.js"></script>
+<script src="assets/blog.js"></script>
+<script>
+(function () {
+  hydrateIcons();
+
+  const CAT_LABELS = { cases: "Кейсы", manage: "Управление школой", advice: "Советы директору", news: "Новости" };
+  const SCENES = ["journal", "schedule", "rating", "chat", "stats", "news", "brand"];
+
+  const $ = (id) => document.getElementById(id);
+  const titleInput = $("titleInput");
+  const excerptInput = $("excerptInput");
+  const editorBody = $("editorBody");
+  const catSelect = $("catSelect");
+  const catTagPreview = $("catTagPreview");
+  const coverSlot = $("coverSlot");
+  const coverPresets = $("coverPresets");
+
+  let state = { cat: "cases", cover: null, status: "draft", slugTouched: false };
+
+  /* ---- Autosize textareas ---- */
+  function autosize(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
+  [titleInput, excerptInput].forEach(el => {
+    autosize(el);
+    el.addEventListener("input", () => { autosize(el); markDirty(); });
+  });
+
+  /* ---- Category ---- */
+  function applyCat() {
+    catSelect.value = state.cat;
+    catTagPreview.className = "tag tag--" + state.cat;
+    catTagPreview.textContent = CAT_LABELS[state.cat];
+    renderCover();
+    renderPresets();
+  }
+  catSelect.addEventListener("change", () => { state.cat = catSelect.value; applyCat(); markDirty(); });
+
+  /* ---- Cover ---- */
+  function renderCover() {
+    if (state.cover) {
+      coverSlot.classList.add("has-cover");
+      coverSlot.querySelector(".cover-slot__hint").style.display = "none";
+      let c = coverSlot.querySelector(".cover");
+      const html = coverHTML({ cat: state.cat, cover: state.cover });
+      // replace existing cover node
+      const old = coverSlot.querySelector(".cover");
+      if (old) old.remove();
+      coverSlot.insertAdjacentHTML("afterbegin", html);
+    } else {
+      coverSlot.classList.remove("has-cover");
+      coverSlot.querySelector(".cover-slot__hint").style.display = "";
+      const old = coverSlot.querySelector(".cover");
+      if (old) old.remove();
+    }
+  }
+  function renderPresets() {
+    coverPresets.innerHTML = SCENES.map(s =>
+      `<button data-scene="${s}" class="${state.cover === s ? "is-active" : ""}">${coverHTML({ cat: state.cat, cover: s })}</button>`
+    ).join("");
+  }
+  coverPresets.addEventListener("click", e => {
+    const b = e.target.closest("button[data-scene]"); if (!b) return;
+    state.cover = state.cover === b.dataset.scene ? null : b.dataset.scene;
+    renderCover(); renderPresets(); markDirty();
+  });
+  coverSlot.addEventListener("click", () => {
+    if (!state.cover) { state.cover = "journal"; renderCover(); renderPresets(); markDirty(); }
+  });
+
+  /* ---- Status segment ---- */
+  $("statusSeg").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    state.status = b.dataset.v;
+    $("statusSeg").querySelectorAll("button").forEach(x => x.classList.toggle("is-active", x === b));
+    markDirty();
+  });
+
+  /* ---- Slug auto from title ---- */
+  const translit = { а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"c",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya" };
+  function slugify(s) {
+    return s.toLowerCase().split("").map(ch => translit[ch] ?? ch).join("")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  }
+  const slugInput = $("slugInput");
+  titleInput.addEventListener("input", () => {
+    if (!state.slugTouched) { slugInput.value = slugify(titleInput.value); }
+    if (!$("seoTitle").value) updateCount($("seoTitle"), $("seoTitleCount"), 60, titleInput.value, false);
+  });
+  slugInput.addEventListener("input", () => { state.slugTouched = true; $("slugAuto").textContent = "вручную"; $("slugAuto").className = ""; markDirty(); });
+
+  /* ---- Reading time ---- */
+  function recalc() {
+    const text = (titleInput.value + " " + excerptInput.value + " " + editorBody.innerText).trim();
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    const mins = Math.max(1, Math.round(words / 200));
+    $("readNum").textContent = mins;
+    $("wordCount").textContent = words + " " + plural(words, ["слово", "слова", "слов"]);
+  }
+  function plural(n, f) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return f[0];
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return f[1];
+    return f[2];
+  }
+  editorBody.addEventListener("input", () => { recalc(); markDirty(); refreshToolbar(); });
+
+  /* ---- SEO counters ---- */
+  function updateCount(input, out, max, forceVal, count) {
+    const v = forceVal != null ? forceVal : input.value;
+    if (forceVal != null) input.placeholder = v ? "" : input.placeholder;
+    const len = (forceVal != null ? (input.value || v) : input.value).length;
+    out.textContent = len + " / " + max;
+    out.className = len > max ? "over" : "";
+  }
+  $("seoTitle").addEventListener("input", () => { updateCount($("seoTitle"), $("seoTitleCount"), 60); markDirty(); });
+  $("seoDesc").addEventListener("input", () => { updateCount($("seoDesc"), $("seoDescCount"), 160); markDirty(); });
+  excerptInput.addEventListener("input", () => { if (!$("seoDesc").value) { $("seoDescCount").textContent = excerptInput.value.length + " / 160"; } });
+
+  /* ---- Toolbar ---- */
+  const toolbar = $("toolbar");
+  toolbar.addEventListener("mousedown", e => { if (e.target.closest(".tb-btn")) e.preventDefault(); });
+  toolbar.addEventListener("click", e => {
+    const btn = e.target.closest(".tb-btn"); if (!btn) return;
+    editorBody.focus();
+    if (btn.dataset.cmd) {
+      const cmd = btn.dataset.cmd, val = btn.dataset.val;
+      if (cmd === "formatBlock") {
+        // toggle: if already that block, revert to <p>
+        const cur = document.queryCommandValue("formatBlock");
+        document.execCommand("formatBlock", false, (cur === val || cur === val.toUpperCase()) ? "p" : val);
+      } else if (cmd === "createLink") {
+        const url = prompt("Ссылка (URL):", "https://");
+        if (url) document.execCommand("createLink", false, url);
+      } else {
+        document.execCommand(cmd, false, null);
+      }
+    } else if (btn.dataset.ins) {
+      insertBlock(btn.dataset.ins);
+    }
+    recalc(); markDirty(); refreshToolbar();
+  });
+
+  function insertHTML(html) {
+    editorBody.focus();
+    document.execCommand("insertHTML", false, html + "<p><br></p>");
+  }
+  function insertBlock(kind) {
+    if (kind === "callout") {
+      insertHTML(`<div class="callout" contenteditable="false"><div class="callout__icon">${icon("bolt")}</div><div class="callout__body" contenteditable="true"><b>Важно</b>Текст важной заметки, которую читатель не должен пропустить.</div></div>`);
+    } else if (kind === "cta") {
+      insertHTML(`<div class="cta-inline" contenteditable="false"><div class="cta-inline__text"><b>Хотите посмотреть, как это работает в вашей организации?</b><span>Покажем Bilimtrack на живом примере за 20 минут.</span></div><a class="btn btn--primary">Получить демо${icon("chevron-right")}</a></div>`);
+    } else if (kind === "image") {
+      insertHTML(`<figure contenteditable="false">${coverHTML({ cat: state.cat, cover: "schedule" })}<figcaption contenteditable="true">Подпись к изображению</figcaption></figure>`);
+    } else if (kind === "ai") {
+      aiDraft();
+    }
+  }
+
+  /* ---- AI helper (sample insert) ---- */
+  function aiDraft() {
+    const btn = toolbar.querySelector('[data-ins="ai"]');
+    btn.style.opacity = ".5"; btn.style.pointerEvents = "none";
+    showToast("Помощник готовит черновик…", "sparkles");
+    setTimeout(() => {
+      insertHTML(`<h2>Контекст</h2><p>Коротко опишите ситуацию: какая организация, сколько студентов и какая задача стояла перед командой.</p><h2>Что сделали</h2><p>Разбейте внедрение на этапы — расписание, журнал, оплата — и опишите результат каждого.</p>`);
+      recalc(); refreshToolbar();
+      btn.style.opacity = ""; btn.style.pointerEvents = "";
+      showToast("Черновик добавлен — отредактируйте под себя", "sparkles");
+    }, 1100);
+  }
+
+  function refreshToolbar() {
+    const map = { bold: "bold", italic: "italic", insertUnorderedList: "insertUnorderedList", insertOrderedList: "insertOrderedList" };
+    toolbar.querySelectorAll(".tb-btn[data-cmd]").forEach(b => {
+      const cmd = b.dataset.cmd;
+      let on = false;
+      try {
+        if (cmd === "formatBlock") {
+          const cur = (document.queryCommandValue("formatBlock") || "").toLowerCase();
+          on = cur === b.dataset.val;
+        } else if (map[cmd]) { on = document.queryCommandState(cmd); }
+      } catch (e) {}
+      b.classList.toggle("is-active", on);
+    });
+  }
+  document.addEventListener("selectionchange", () => {
+    if (document.activeElement === editorBody) refreshToolbar();
+  });
+
+  /* ---- Save / publish / toast ---- */
+  let dirty = false, saveTimer = null;
+  function markDirty() {
+    dirty = true;
+    $("saveStatus").classList.add("is-dirty");
+    $("saveText").textContent = "Несохранённые изменения";
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 1200);
+  }
+  function snapshot() {
+    return {
+      title: titleInput.value, excerpt: excerptInput.value, body: editorBody.innerHTML,
+      cat: state.cat, cover: state.cover, status: state.status,
+      slug: slugInput.value, date: $("pubDate").value,
+      seoTitle: $("seoTitle").value, seoDesc: $("seoDesc").value,
+    };
+  }
+  function save() {
+    localStorage.setItem("bt_draft", JSON.stringify(snapshot()));
+    dirty = false;
+    $("saveStatus").classList.remove("is-dirty");
+    $("saveText").textContent = "Черновик сохранён";
+  }
+  function showToast(text, ic) {
+    $("toastText").textContent = text;
+    const t = $("toast");
+    if (ic) t.querySelector(".ic").outerHTML = icon(ic);
+    t.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+  $("saveDraftBtn").addEventListener("click", () => { save(); showToast("Черновик сохранён", "check"); });
+
+  function publish() {
+    if (!titleInput.value.trim()) { titleInput.focus(); showToast("Добавьте заголовок статьи", "bolt"); return; }
+    state.status = "published";
+    $("statusSeg").querySelectorAll("button").forEach(x => x.classList.toggle("is-active", x.dataset.v === "published"));
+    save();
+    showToast("Статья опубликована на /blog/" + (slugInput.value || "novaya-statya"), "check");
+  }
+  $("publishBtn").addEventListener("click", publish);
+  $("publishBtn2").addEventListener("click", publish);
+
+  $("previewBtn").addEventListener("click", () => { save(); window.open("Article.html", "_blank"); });
+
+  /* ---- Restore draft or seed example ---- */
+  function restore() {
+    const raw = localStorage.getItem("bt_draft");
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        titleInput.value = d.title || ""; excerptInput.value = d.excerpt || "";
+        editorBody.innerHTML = d.body || "";
+        state.cat = d.cat || "cases"; state.cover = d.cover || null; state.status = d.status || "draft";
+        slugInput.value = d.slug || ""; if (d.slug) { state.slugTouched = true; $("slugAuto").textContent = "вручную"; $("slugAuto").className = ""; }
+        $("pubDate").value = d.date || todayISO();
+        $("seoTitle").value = d.seoTitle || ""; $("seoDesc").value = d.seoDesc || "";
+        $("statusSeg").querySelectorAll("button").forEach(x => x.classList.toggle("is-active", x.dataset.v === state.status));
+        applyCat();
+        autosize(titleInput); autosize(excerptInput);
+        updateCount($("seoTitle"), $("seoTitleCount"), 60); updateCount($("seoDesc"), $("seoDescCount"), 160);
+        recalc();
+        return;
+      } catch (e) {}
+    }
+    seedExample();
+  }
+  function todayISO() { return new Date().toISOString().slice(0, 10); }
+  function seedExample() {
+    state.cat = "cases"; state.cover = "journal";
+    titleInput.value = "Как МУИТ перешёл на цифровое управление учебным процессом";
+    excerptInput.value = "Рассказываем, как международный университет автоматизировал расписание, журнал и оплату — и за один семестр избавился от бумажной рутины.";
+    editorBody.innerHTML =
+      `<p>Когда набор вырос до полутора тысяч студентов, привычные таблицы перестали справляться. Расписание собиралось вручную неделями, а журнал жил в десятке разных файлов.</p>` +
+      `<h2>С чего всё началось</h2>` +
+      `<p>Поводом стал не глобальный план цифровизации, а конкретная боль: деканат тратил почти три недели на сборку расписания для <strong>48 групп</strong>.</p>` +
+      `<div class="callout" contenteditable="false"><div class="callout__icon">${icon("bolt")}</div><div class="callout__body" contenteditable="true"><b>Важно</b>Цифровизация начинается не с покупки софта, а с честного списка того, что отнимает время у команды каждую неделю.</div></div>` +
+      `<p><br></p>`;
+    $("pubDate").value = todayISO();
+    slugInput.value = slugify(titleInput.value);
+    applyCat();
+    autosize(titleInput); autosize(excerptInput);
+    recalc();
+    $("saveText").textContent = "Черновик сохранён";
+  }
+
+  restore();
+  refreshToolbar();
+})();
+</script>
+</body>
+</html>
