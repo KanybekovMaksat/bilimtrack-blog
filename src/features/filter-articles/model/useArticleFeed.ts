@@ -85,7 +85,7 @@ export function useArticleFeed(
     });
 
     return out;
-  }, []);
+  }, [feedArticles]);
 
   const filtered = useMemo(() => {
     let list =
@@ -102,15 +102,16 @@ export function useArticleFeed(
     }
 
     return list;
-  }, [activeCat, query]);
+  // feedArticles must be in deps — without it filter won't react when API data arrives
+  }, [activeCat, query, feedArticles]);
 
   const isSearching = query.length > 0;
   const showHero = activeCat === "all" && !isSearching;
 
   const hero = useMemo(() => {
     if (!showHero) return null;
-
     return feedArticles.find((a) => a.featured) ?? filtered[0] ?? null;
+  // feedArticles needed: hero picks featured article from the full list
   }, [showHero, filtered, feedArticles]);
 
   const rest = useMemo(

@@ -23,4 +23,8 @@ export interface Article {
   popular?: boolean;
   excerpt: string;
   content?: string;
+  relatedArticles?: Article[];
+  /** Author object from API — { name, avatarUrl } */
+  author?: { id?: string; name: string; avatarUrl?: string } | null;
 }
+

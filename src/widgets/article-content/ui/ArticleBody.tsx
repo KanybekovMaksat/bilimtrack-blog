@@ -5,17 +5,40 @@ import { Button, Icon } from "@/shared/ui";
 interface ArticleBodyProps {
   /** Slug of the article being read (keys the lead-magnet state). */
   slug: string;
+  /** HTML content from API. When present, renders it directly. */
   content?: string;
 }
 
-/** The MÚIT case-study prose: headings, callouts, table, in-content CTAs. */
+/**
+ * Renders article body.
+ * - If the API returned HTML content, renders it with dangerouslySetInnerHTML
+ *   followed by the LeadMagnet block.
+ * - Falls back to the МУИТ case-study mock when no content is provided.
+ *
+ * NOTE: We do NOT split the HTML string to inject LeadMagnet mid-content.
+ * Splitting BlockNote HTML (which starts with nested <div> blocks) causes
+ * the browser to auto-repair unclosed tags differently on server vs client,
+ * producing a React hydration mismatch. LeadMagnet always renders after
+ * the full content block.
+ */
 export function ArticleBody({ slug, content }: ArticleBodyProps) {
-  if (content) {
+  if (content && content.trim().length > 0) {
     return (
-      <div className="prose" id="prose" dangerouslySetInnerHTML={{ __html: content }} />
+      <div className="prose" id="prose">
+        {/*
+          suppressHydrationWarning: acceptable for rich HTML from a CMS editor —
+          minor whitespace/attribute diffs between server and client are harmless.
+        */}
+        <div
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+        <LeadMagnet slug={slug} />
+      </div>
     );
   }
 
+  // ── Fallback: МУИТ case-study mock ────────────────────────────────────────
   return (
     <div className="prose" id="prose">
       <p>
@@ -157,21 +180,6 @@ export function ArticleBody({ slug, content }: ArticleBodyProps) {
         </figcaption>
       </figure>
 
-      <aside className="cta-module">
-        <span className="cta-module__icon">
-          <Icon name="list" />
-        </span>
-        <p className="cta-module__text">
-          <b>Это модуль «Электронный журнал».</b> Пятибалльные оценки и
-          посещаемость в пару кликов, итоги по модулю считаются сами —
-          посмотрите на примере своего предмета.
-        </p>
-        <a className="cta-module__link" href="#demo">
-          Открыть демо
-          <Icon name="chevron-right" />
-        </a>
-      </aside>
-
       <h3>Этап 3. Оплата</h3>
       <p>
         Последним подключили финансовый модуль. Родители видят сумму и срок
@@ -179,36 +187,7 @@ export function ArticleBody({ slug, content }: ArticleBodyProps) {
         Сверка по выпискам ушла в прошлое.
       </p>
 
-      <p>
-        Для интеграции с внутренними сервисами университета использовали выгрузку
-        в стандартном формате — буквально одна строка в настройках экспорта:
-      </p>
-      <pre>
-        <code>export --module=finance --format=csv --period=current</code>
-      </pre>
-
-      <aside className="cta-module">
-        <span className="cta-module__icon">
-          <Icon name="credit-card" />
-        </span>
-        <p className="cta-module__text">
-          <b>Это модуль «Онлайн-оплата».</b> Родители платят прямо из приложения,
-          а бухгалтерия видит статус платежей в реальном времени — подключим к
-          вашим реквизитам.
-        </p>
-        <a className="cta-module__link" href="#demo">
-          Как это работает
-          <Icon name="chevron-right" />
-        </a>
-      </aside>
-
       <h2 id="s4">Результаты за первый семестр</h2>
-      <p>
-        Главный эффект — время. То, что раньше требовало недель и нескольких
-        сотрудников, теперь происходит в фоне. Ниже — измеримые изменения по
-        итогам первого семестра работы.
-      </p>
-
       <div className="table-wrap">
         <table>
           <thead>
@@ -241,18 +220,6 @@ export function ArticleBody({ slug, content }: ArticleBodyProps) {
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div className="callout callout--ok">
-        <div className="callout__icon">
-          <Icon name="check" />
-        </div>
-        <div className="callout__body">
-          <b>Что сработало лучше всего</b>
-          Поэтапный запуск. Команда успевала привыкнуть к каждому блоку, прежде
-          чем подключался следующий — поэтому не было ощущения, что «всё сломали
-          и заставили работать по-новому».
-        </div>
       </div>
 
       <h2 id="s5">Что дальше</h2>

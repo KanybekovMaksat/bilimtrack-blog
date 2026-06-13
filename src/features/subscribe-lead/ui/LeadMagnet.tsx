@@ -1,46 +1,74 @@
 import { useEffect, useState } from "react";
 
+import { blogApi } from "@/shared/api/blog-api";
 import { Button, Icon } from "@/shared/ui";
 import { cn } from "@/shared/lib";
 
 interface LeadMagnetProps {
   /** Used to key the saved state per article. */
   slug: string;
+  /** Article ID for sourceArticle field in demo request (optional). */
+  articleId?: string;
 }
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
-/** Top-of-funnel checklist offer in exchange for an email. */
-export function LeadMagnet({ slug }: LeadMagnetProps) {
+/** Top-of-funnel checklist offer in exchange for an email / demo request. */
+export function LeadMagnet({ slug, articleId }: LeadMagnetProps) {
   const storageKey = `bt_lead_${slug}`;
+
   const [email, setEmail] = useState("");
   const [invalid, setInvalid] = useState(false);
-  const [done, setDone] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState(
     "Проверьте почту — письмо уже летит к вам.",
   );
 
-  useEffect(() => {
-    const saved = localStorage.getItem(storageKey);
+  /**
+   * `done` starts as false on both server and client (matching SSR).
+   * We only ever set it to true inside useEffect (client-only),
+   * which runs after hydration — eliminating the server/client mismatch.
+   */
+  const [done, setDone] = useState(false);
 
+  useEffect(() => {
+    // Check localStorage only on client, after hydration is complete
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       setDone(true);
       setSuccessMsg(`Письмо отправлено на ${saved}. Проверьте почту.`);
     }
   }, [storageKey]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = email.trim();
 
     if (!isValidEmail(v)) {
       setInvalid(true);
-
       return;
     }
-    localStorage.setItem(storageKey, v);
-    setSuccessMsg(`Письмо отправлено на ${v}. Проверьте почту.`);
-    setDone(true);
+
+    setIsLoading(true);
+    try {
+      await blogApi.submitDemoRequest({
+        name: v,
+        contact: v,
+        organization: "—",
+        orgType: "other",
+        studentsCount: "lt100",
+        source: "blog",
+        ...(articleId ? { sourceArticle: articleId } : {}),
+      });
+    } catch (err) {
+      // Non-blocking — save locally even if API fails
+      console.warn("LeadMagnet submitDemoRequest failed (non-blocking):", err);
+    } finally {
+      setIsLoading(false);
+      localStorage.setItem(storageKey, v);
+      setSuccessMsg(`Письмо отправлено на ${v}. Проверьте почту.`);
+      setDone(true);
+    }
   };
 
   return (
@@ -93,8 +121,8 @@ export function LeadMagnet({ slug }: LeadMagnetProps) {
           />
         </label>
         <span className="lm-err">Введите корректный e-mail</span>
-        <Button block type="submit">
-          Скачать чек-лист
+        <Button block type="submit" disabled={isLoading}>
+          {isLoading ? "Отправляем..." : "Скачать чек-лист"}
           <Icon name="download" />
         </Button>
         <span className="lead-magnet__note">

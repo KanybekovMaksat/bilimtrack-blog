@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 
 import { type CoverScene } from "@/entities/article";
 import type { ArticleCategory } from "@/entities/category";
@@ -21,6 +22,7 @@ const DRAFT_KEY = "bt_draft";
 const PREVIEW_SLUG = "muit-cifrovoe-upravlenie";
 
 interface Snapshot {
+  id: string | null;
   title: string;
   excerpt: string;
   bodyHtml: string;
@@ -35,17 +37,74 @@ interface Snapshot {
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+/**
+ * Resolve the category UUID to send to the backend.
+ * Priority:
+ *   1. Category whose .slug matches the editor's current cat key
+ *   2. First category in the list (safe fallback)
+ *   3. null (caller must guard)
+ */
+function resolveCategoryUuid(
+  categoriesList: { id: string; name: string; slug: string }[],
+  catKey: string
+): string | null {
+  if (categoriesList.length === 0) return null;
+  const match = categoriesList.find((c) => c.slug === catKey);
+  return (match ?? categoriesList[0]).id;
+}
+
+/**
+ * Build the POST/PATCH payload for /cms/articles/ per the API spec.
+ * Field names: titleRu, excerptRu, contentRu, category (UUID string),
+ * author (UUID string), slug, status, coverImageUrl, seoTitleRu, seoDescriptionRu.
+ */
+function buildArticlePayload(
+  data: Snapshot,
+  categoryUuid: string,
+  authorUuid: string | null
+) {
+  return {
+    titleRu: data.title,
+    excerptRu: data.excerpt,
+    contentRu: data.bodyHtml,
+    // Per spec: field name is 'category', value is UUID string
+    category: categoryUuid,
+    // author is optional — omit if null to avoid validation errors
+    ...(authorUuid ? { author: authorUuid } : {}),
+    status: data.status,
+    slug: data.slug || slugify(data.title),
+    coverImageUrl: data.cover
+      ? `https://cdn.bilimtrack.com/blog/covers/${data.cover}.webp`
+      : null,
+    seoTitleRu: data.seoTitle || null,
+    seoDescriptionRu: data.seoDesc || null,
+  };
+}
+
+/** Parse a Django validation error response into a human-readable string */
+function parseDjangoError(res: any): string {
+  if (!res) return "Неизвестная ошибка";
+  if (typeof res.detail === "string") return res.detail;
+  if (typeof res.error === "string") return res.error;
+  // Field-level errors: { category: ["may not be null"], title: ["required"] }
+  const fieldErrors = Object.entries(res)
+    .filter(([, v]) => Array.isArray(v))
+    .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
+    .join(" | ");
+  if (fieldErrors) return fieldErrors;
+  return JSON.stringify(res);
+}
+
 export function useArticleEditor() {
+  const router = useRouter();
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const excerptRef = useRef<HTMLTextAreaElement>(null);
-  
-  // We'll store a ref to a function that retrieves current HTML from BlockNote
   const getEditorHTMLRef = useRef<() => Promise<string>>(async () => "");
-  
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(false);
 
+  const [articleId, setArticleId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [cat, setCat] = useState<ArticleCategory>("cases");
@@ -57,9 +116,13 @@ export function useArticleEditor() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
 
+  const [categoriesList, setCategoriesList] = useState<
+    { id: string; name: string; slug: string }[]
+  >([]);
+  const [authorsList, setAuthorsList] = useState<{ id: string; name: string }[]>([]);
+
   const [words, setWords] = useState(0);
   const [dirty, setDirty] = useState(false);
-  
   const [initialHtml, setInitialHtml] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
 
@@ -74,6 +137,7 @@ export function useArticleEditor() {
   const seoTitleLen = (seoTitle || title).length;
   const seoDescLen = (seoDesc || excerpt).length;
 
+  // Auto-resize textareas
   useEffect(() => {
     const el = titleRef.current;
     if (el) {
@@ -90,6 +154,7 @@ export function useArticleEditor() {
     }
   }, [excerpt]);
 
+  // Auto-generate slug from title unless user touched it
   useEffect(() => {
     if (!slugTouched) setSlug(slugify(title));
   }, [title, slugTouched]);
@@ -99,13 +164,14 @@ export function useArticleEditor() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(
       () => setToast((t) => ({ ...t, show: false })),
-      2400,
+      2400
     );
   }, []);
 
   const snapshot = async (): Promise<Snapshot> => {
     const bodyHtml = await getEditorHTMLRef.current();
     return {
+      id: articleId,
       title,
       excerpt,
       bodyHtml,
@@ -119,17 +185,56 @@ export function useArticleEditor() {
     };
   };
 
+  // ---------------------------------------------------------------------------
+  // save() — localStorage + API autosave
+  // ---------------------------------------------------------------------------
   const save = useCallback(async () => {
     const data = await snapshot();
+    // Always persist to localStorage first (works offline / without auth)
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
     setDirty(false);
-    
-    // NOTE: For real CMS connection, we would save to API here
-    // const token = localStorage.getItem("cms_token");
-    // if (token) {
-    //   await cmsApi.createArticle(token, { ...data, contentRu: data.bodyHtml });
-    // }
-  }, [title, excerpt, cat, cover, status, slug, pubDate, seoTitle, seoDesc]);
+
+    const token = localStorage.getItem("cms_token");
+    if (!token) return; // Not logged in — localStorage-only save is fine
+
+    const categoryUuid = resolveCategoryUuid(categoriesList, data.cat);
+    if (!categoryUuid) {
+      // Categories not loaded yet — skip API save, will retry on next keystroke
+      console.warn("=== CMS AUTOSAVE SKIPPED: categories not loaded yet ===");
+      return;
+    }
+
+    const authorUuid = authorsList[0]?.id ?? null;
+    const payload = buildArticlePayload(data, categoryUuid, authorUuid);
+
+    console.log("=== CMS SEND DATA ===", payload);
+
+    try {
+      if (articleId) {
+        // PATCH existing article
+        const res = await cmsApi.updateArticle(token, articleId, payload);
+        if (res?.data?.id) {
+          // id confirmed — all good
+        } else if (res && (res.category || res.detail || res.error)) {
+          console.error("=== CMS PATCH ERROR ===", res);
+        }
+      } else {
+        // POST new article — capture the returned ID
+        const res = await cmsApi.createArticle(token, payload);
+        if (res?.data?.id) {
+          setArticleId(res.data.id);
+          localStorage.setItem(
+            DRAFT_KEY,
+            JSON.stringify({ ...data, id: res.data.id })
+          );
+        } else if (res && Object.keys(res).length > 0) {
+          console.error("=== CMS CREATE ERROR ===", res);
+        }
+      }
+    } catch (err) {
+      console.error("Autosave API request failed:", err);
+    }
+  }, [articleId, title, excerpt, cat, cover, status, slug, pubDate, seoTitle, seoDesc, categoriesList, authorsList]);
 
   const markDirty = useCallback(() => {
     setDirty(true);
@@ -146,8 +251,7 @@ export function useArticleEditor() {
   const onBodyChange = useCallback(async () => {
     markDirty();
     const html = await getEditorHTMLRef.current();
-    // Simple word count from HTML stripping tags
-    const text = html.replace(/<[^>]*>?/gm, ' ');
+    const text = html.replace(/<[^>]*>?/gm, " ");
     setWords(countWords(`${title} ${excerpt} ${text}`));
   }, [title, excerpt, markDirty]);
 
@@ -169,46 +273,106 @@ export function useArticleEditor() {
     showToast("Черновик сохранён", "check");
   }, [save, showToast]);
 
+  // ---------------------------------------------------------------------------
+  // publish()
+  // ---------------------------------------------------------------------------
   const publish = useCallback(async () => {
     if (!title.trim()) {
       titleRef.current?.focus();
       showToast("Добавьте заголовок статьи", "bolt");
       return;
     }
-    const data = await snapshot();
-    
+
+    const token = localStorage.getItem("cms_token");
+    if (!token) {
+      showToast("Требуется авторизация", "bolt");
+      router.push("/writer/login");
+      return;
+    }
+
     try {
-      let token = localStorage.getItem("cms_token");
-      // If no token exists, fallback to a dummy token so the request is at least attempted
-      if (!token) token = "dummy_test_token";
+      let currentId = articleId;
 
-      // Send to real server with snake_case keys as required by API
-      const res = await cmsApi.createArticle(token, {
-          title_ru: data.title,
-          excerpt_ru: data.excerpt,
-          content_ru: data.bodyHtml,
-          status: "published",
-          slug: data.slug || "novaya-statya",
-          category_id: "00000000-0000-0000-0000-000000000000", // Fallback UUID
-          cover_image_url: "https://cdn.bilimtrack.com/blog/covers/" + (data.cover || "journal") + ".webp",
-      });
+      if (!currentId) {
+        const data = await snapshot();
 
-      if (res.error || res.detail) {
-        showToast("Ошибка сервера: " + (res.detail || "Неизвестная ошибка"), "bolt");
-        return;
+        const categoryUuid = resolveCategoryUuid(categoriesList, data.cat);
+        if (!categoryUuid) {
+          showToast("Категории загружаются, подождите секунду и повторите", "bolt");
+          return;
+        }
+
+        const authorUuid = authorsList[0]?.id ?? null;
+        const payload = buildArticlePayload(
+          { ...data, status: "draft" },
+          categoryUuid,
+          authorUuid
+        );
+
+        console.log("=== CMS SEND DATA (publish step 1 — create) ===", payload);
+
+        const res = await cmsApi.createArticle(token, payload);
+        if (res?.data?.id) {
+          currentId = res.data.id;
+          setArticleId(currentId);
+          localStorage.setItem(
+            DRAFT_KEY,
+            JSON.stringify({ ...data, id: currentId })
+          );
+        } else {
+          showToast("Ошибка создания: " + parseDjangoError(res?.data ?? res), "bolt");
+          console.error("=== CMS CREATE ERROR ===", res);
+          return;
+        }
       }
-      
-      setStatus("published");
-      await save();
-      showToast(
-        "Статья опубликована на /blog/" + (data.slug || "novaya-statya"),
-        "check",
-      );
+
+      // Publish via dedicated endpoint
+      if (currentId) {
+        console.log("=== CMS PUBLISH article id ===", currentId);
+        const res = await cmsApi.publishArticle(token, currentId);
+        // Success: res may be empty 200 or { data: {...} }
+        if (res?.detail || res?.error) {
+          showToast("Ошибка публикации: " + parseDjangoError(res), "bolt");
+          return;
+        }
+        setStatus("published");
+        showToast("Статья успешно опубликована 🎉", "check");
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Publish error:", e);
       showToast("Сетевая ошибка при публикации", "bolt");
     }
-  }, [title, save, showToast, snapshot]);
+  }, [articleId, title, categoriesList, authorsList, router, showToast]);
+
+  // ---------------------------------------------------------------------------
+  // archive()
+  // ---------------------------------------------------------------------------
+  const archive = useCallback(async () => {
+    const token = localStorage.getItem("cms_token");
+    if (!token) {
+      showToast("Требуется авторизация", "bolt");
+      router.push("/writer/login");
+      return;
+    }
+
+    if (!articleId) {
+      showToast("Статья ещё не сохранена на сервере", "bolt");
+      return;
+    }
+
+    try {
+      const res = await cmsApi.archiveArticle(token, articleId);
+      if (res?.error || res?.detail) {
+        showToast("Ошибка архивации: " + parseDjangoError(res), "bolt");
+        return;
+      }
+      setStatus("draft");
+      showToast("Статья переведена в архив", "check");
+    } catch (e) {
+      console.error("Archive error:", e);
+      showToast("Сетевая ошибка при архивации", "bolt");
+    }
+  }, [articleId, router, showToast]);
 
   const preview = useCallback(async () => {
     await save();
@@ -217,16 +381,54 @@ export function useArticleEditor() {
 
   const deleteDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
+    setArticleId(null);
     showToast("Черновик удалён", "trash");
   }, [showToast]);
 
+  // ---------------------------------------------------------------------------
+  // Load categories & authors on mount (requires auth)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const token = localStorage.getItem("cms_token");
+    if (!token) return;
+
+    cmsApi
+      .getCategories()
+      .then((res) => {
+        const list: any[] = res?.data ?? [];
+        if (list.length > 0) {
+          setCategoriesList(
+            list.map((c: any) => ({
+              id: c.id,
+              name: c.nameRu ?? c.name ?? c.slug,
+              slug: c.slug,
+            }))
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to load CMS categories:", err));
+
+    cmsApi
+      .getAuthors()
+      .then((res) => {
+        const list: any[] = res?.data ?? [];
+        if (list.length > 0) {
+          setAuthorsList(list.map((a: any) => ({ id: a.id, name: a.name })));
+        }
+      })
+      .catch((err) => console.error("Failed to load CMS authors:", err));
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Restore draft from localStorage on mount
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     const seedExample = () => {
       setCat("cases");
       setCover("journal");
       setTitle("Как МУИТ перешёл на цифровое управление учебным процессом");
       setExcerpt(
-        "Рассказываем, как международный университет автоматизировал расписание, журнал и оплату — и за один семестр избавился от бумажной рутины.",
+        "Рассказываем, как международный университет автоматизировал расписание, журнал и оплату — и за один семестр избавился от бумажной рутины."
       );
       setInitialHtml(
         `<p>Когда набор вырос до полутора тысяч студентов, привычные таблицы перестали справляться.</p>`
@@ -234,10 +436,12 @@ export function useArticleEditor() {
       setPubDate(todayISO());
     };
 
-    const raw = typeof localStorage !== "undefined" && localStorage.getItem(DRAFT_KEY);
+    const raw =
+      typeof localStorage !== "undefined" && localStorage.getItem(DRAFT_KEY);
     if (raw) {
       try {
         const d = JSON.parse(raw) as Snapshot;
+        setArticleId(d.id || null);
         setTitle(d.title || "");
         setExcerpt(d.excerpt || "");
         setCat(d.cat || "cases");
@@ -267,6 +471,7 @@ export function useArticleEditor() {
 
   return {
     refs: { titleRef, excerptRef, getEditorHTMLRef },
+    articleId,
     title,
     excerpt,
     cat,
@@ -287,6 +492,8 @@ export function useArticleEditor() {
     scenes: COVER_SCENES,
     initialHtml,
     isReady,
+    categoriesList,
+    authorsList,
     setTitle,
     setExcerpt,
     setCat,
@@ -300,6 +507,7 @@ export function useArticleEditor() {
     ensureCover,
     saveDraft,
     publish,
+    archive,
     preview,
     deleteDraft,
   };

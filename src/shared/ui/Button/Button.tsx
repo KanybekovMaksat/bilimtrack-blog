@@ -29,6 +29,7 @@ interface ActionProps extends BaseProps {
   href?: undefined;
   onPress?: () => void;
   type?: "button" | "submit" | "reset";
+  disabled?: boolean;
 }
 
 export type ButtonProps = LinkProps | ActionProps;
@@ -73,6 +74,7 @@ export function Button(props: ButtonProps) {
       type={props.type ?? "button"}
       variant={variant}
       onPress={props.onPress}
+      isDisabled={props.disabled}
     >
       {children}
     </HeroButton>
