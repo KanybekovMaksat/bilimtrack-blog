@@ -76,8 +76,9 @@ function buildArticlePayload(
     coverImageUrl: data.cover
       ? `https://cdn.bilimtrack.com/blog/covers/${data.cover}.webp`
       : null,
-    seoTitleRu: data.seoTitle || null,
-    seoDescriptionRu: data.seoDesc || null,
+    // API does not accept null for SEO fields — fall back to title/excerpt
+    seoTitleRu: data.seoTitle || data.title || "—",
+    seoDescriptionRu: data.seoDesc || data.excerpt || "—",
   };
 }
 
@@ -86,6 +87,14 @@ function parseDjangoError(res: any): string {
   if (!res) return "Неизвестная ошибка";
   if (typeof res.detail === "string") return res.detail;
   if (typeof res.error === "string") return res.error;
+  // DRF drf-spectacular style: { type, errors: [{attr, code, detail}] }
+  if (Array.isArray(res.errors)) {
+    return res.errors
+      .map((e: { attr?: string; detail?: string }) =>
+        e.attr ? `${e.attr}: ${e.detail}` : e.detail ?? JSON.stringify(e)
+      )
+      .join(" | ");
+  }
   // Field-level errors: { category: ["may not be null"], title: ["required"] }
   const fieldErrors = Object.entries(res)
     .filter(([, v]) => Array.isArray(v))
@@ -93,6 +102,24 @@ function parseDjangoError(res: any): string {
     .join(" | ");
   if (fieldErrors) return fieldErrors;
   return JSON.stringify(res);
+}
+
+/** Check if an API response contains a slug-uniqueness error */
+function hasSlugUniqueError(res: any): boolean {
+  if (!res) return false;
+  if (Array.isArray(res.errors)) {
+    return res.errors.some(
+      (e: { attr?: string; code?: string }) =>
+        e.attr === "slug" && e.code === "unique"
+    );
+  }
+  return false;
+}
+
+/** Append a short random 4-char suffix to make a slug unique */
+function makeUniqueSlug(base: string): string {
+  const suffix = Math.random().toString(36).slice(2, 6);
+  return `${base}-${suffix}`;
 }
 
 export function useArticleEditor() {
@@ -199,8 +226,7 @@ export function useArticleEditor() {
 
     const categoryUuid = resolveCategoryUuid(categoriesList, data.cat);
     if (!categoryUuid) {
-      // Categories not loaded yet — skip API save, will retry on next keystroke
-      console.warn("=== CMS AUTOSAVE SKIPPED: categories not loaded yet ===");
+      // Categories not loaded yet — skip API save silently, will retry on next change
       return;
     }
 
@@ -220,7 +246,18 @@ export function useArticleEditor() {
         }
       } else {
         // POST new article — capture the returned ID
-        const res = await cmsApi.createArticle(token, payload);
+        let createPayload = { ...payload };
+        let res = await cmsApi.createArticle(token, createPayload);
+
+        // If slug already exists, auto-suffix and retry once
+        if (hasSlugUniqueError(res)) {
+          const uniqueSlug = makeUniqueSlug(createPayload.slug);
+          setSlug(uniqueSlug);
+          setSlugTouched(true);
+          createPayload = { ...createPayload, slug: uniqueSlug };
+          res = await cmsApi.createArticle(token, createPayload);
+        }
+
         if (res?.data?.id) {
           setArticleId(res.data.id);
           localStorage.setItem(

@@ -1,4 +1,5 @@
 import NextLink from "next/link";
+import { useRouter } from "next/router";
 import { Avatar } from "@heroui/react";
 
 import { ARTICLES } from "@/entities/article";
@@ -8,8 +9,35 @@ import { siteConfig } from "@/shared/config";
 
 const realCategories = CATEGORIES.filter((c) => c.key !== "all").length;
 
+interface NavItemProps {
+  href: string;
+  icon: string;
+  label: string;
+  badge?: number;
+  activeHref: string;
+}
+
+function NavItem({ href, icon, label, badge, activeHref }: NavItemProps) {
+  const isActive = activeHref === href;
+  return (
+    <NextLink
+      href={href}
+      className={`nav-item${isActive ? " is-active" : ""}`}
+    >
+      <Icon name={icon} />
+      {label}
+      {badge !== undefined && (
+        <span className="badge">{badge}</span>
+      )}
+    </NextLink>
+  );
+}
+
 /** Left navigation rail of the blog admin, modelled on the Mentor console. */
 export function EditorNav() {
+  const router = useRouter();
+  const activeHref = router.pathname;
+
   return (
     <nav className="admin-nav">
       <NextLink className="brand" href="/blog">
@@ -26,39 +54,18 @@ export function EditorNav() {
       </NextLink>
 
       <div className="nav-section">Контент</div>
-      <div className="nav-item">
-        <Icon name="file-text" />
-        Статьи<span className="badge">{ARTICLES.length}</span>
-      </div>
-      <div className="nav-item is-active">
-        <Icon name="pencil" />
-        Новая статья
-      </div>
-      <div className="nav-item">
-        <Icon name="tag" />
-        Категории<span className="badge">{realCategories}</span>
-      </div>
-      <div className="nav-item">
-        <Icon name="photo" />
-        Медиа
-      </div>
+      <NavItem href="/writer/articles" icon="file-text" label="Статьи" badge={ARTICLES.length} activeHref={activeHref} />
+      <NavItem href="/writer/admin"    icon="pencil"    label="Новая статья" activeHref={activeHref} />
+      <NavItem href="/writer/categories" icon="tag"    label="Категории" badge={realCategories} activeHref={activeHref} />
+      <NavItem href="/writer/media"    icon="photo"     label="Медиа" activeHref={activeHref} />
 
       <div className="nav-section">Аналитика</div>
-      <div className="nav-item">
-        <Icon name="chart-bar" />
-        Статистика
-      </div>
-      <div className="nav-item">
-        <Icon name="users" />
-        Авторы
-      </div>
+      <NavItem href="/writer/stats"   icon="chart-bar" label="Статистика" activeHref={activeHref} />
+      <NavItem href="/writer/authors" icon="users"     label="Авторы" activeHref={activeHref} />
 
       <div className="admin-nav__spacer" />
 
-      <div className="nav-item">
-        <Icon name="settings" />
-        Настройки
-      </div>
+      <NavItem href="/writer/settings" icon="settings" label="Настройки" activeHref={activeHref} />
       <div className="admin-nav__user">
         <Avatar className="admin-nav__avatar">
           <Avatar.Image alt="" src="/avatar-default.png" />

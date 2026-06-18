@@ -19,7 +19,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
   const buildHeaders = (t: string | null): Record<string, string> => ({
     "Content-Type": "application/json",
     ...(t ? { Authorization: `Bearer ${t}` } : {}),
-    ...(options.headers as Record<string, string> | undefined ?? {}),
+    ...((options.headers as Record<string, string> | undefined) ?? {}),
   });
 
   let res = await fetch(url, { ...options, headers: buildHeaders(token) });

@@ -6,13 +6,13 @@ export const siteConfig = {
   description:
     "Практические материалы для руководителей учебных организаций — кейсы, советы и разборы инструментов.",
   nav: [
-    { label: "Возможности", href: "#" },
-    { label: "Цены", href: "#" },
+    { label: "Возможности", href: "/features" },
+    { label: "Цены", href: "/pricing" },
     { label: "Блог", href: "/blog" },
   ],
   footerNav: [
-    { label: "Возможности", href: "#" },
-    { label: "Цены", href: "#" },
+    { label: "Возможности", href: "/features" },
+    { label: "Цены", href: "/pricing" },
     { label: "Блог", href: "/blog" },
     { label: "Демо", href: "#demo" },
   ],
