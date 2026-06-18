@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { ArticleGrid, ARTICLES } from "@/entities/article";
+import { ArticleGrid } from "@/entities/article";
 import { CAT_LABEL, type CategoryKey } from "@/entities/category";
 import { CategoryFilter, useArticleFeed } from "@/features/filter-articles";
 import { SiteHeader } from "@/widgets/site-header";
@@ -15,9 +15,10 @@ const isCategoryKey = (v: unknown): v is CategoryKey =>
   typeof v === "string" && v in CAT_LABEL;
 
 /** Main blog page container using FSD hierarchy. */
-export function BlogPage({ initialArticles }: { initialArticles?: any[] }) {
+export function BlogPage() {
   const router = useRouter();
-  const feed = useArticleFeed("all", initialArticles);
+  const feed = useArticleFeed("all");
+
 
   // Sync ?cat=… (e.g. from sidebar category links) into the feed.
   const catParam = router.query.cat;
@@ -49,7 +50,7 @@ export function BlogPage({ initialArticles }: { initialArticles?: any[] }) {
 
       <main className="page container">
         <BlogHero
-          articleCount={ARTICLES.length}
+          articleCount={feed.totalCount}
           inputValue={feed.inputValue}
           onSearch={feed.search}
           onTopic={feed.applyTopic}
@@ -57,13 +58,13 @@ export function BlogPage({ initialArticles }: { initialArticles?: any[] }) {
 
         <CategoryFilter
           activeCat={feed.activeCat}
-          counts={feed.counts}
+          counts={{} as any}
           onSelect={feed.selectCategory}
         />
 
         <div className="with-sidebar">
           <div className="feed">
-            <ArticleGrid articles={feed.visible} />
+            <ArticleGrid articles={feed.visible as any} />
 
             {feed.isEmpty && (
               <div className="empty-state">{feed.emptyText}</div>
@@ -81,7 +82,7 @@ export function BlogPage({ initialArticles }: { initialArticles?: any[] }) {
 
           <CategoriesSidebar
             currentCat={feed.activeCat}
-            counts={feed.counts}
+            counts={{} as any}
             onSelect={feed.selectCategory}
           />
         </div>

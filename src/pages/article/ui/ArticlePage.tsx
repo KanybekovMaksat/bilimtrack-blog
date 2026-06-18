@@ -3,12 +3,10 @@ import Head from "next/head";
 import NextLink from "next/link";
 
 import {
-  ARTICLES,
   ArticleCard,
   ArticleCover,
   type Article,
   PopularList,
-  popularArticles,
 } from "@/entities/article";
 import { CAT_LABEL, CategoryTag } from "@/entities/category";
 import { ShareRow, ShareButtons } from "@/features/share-article";
@@ -45,8 +43,10 @@ interface ArticlePageProps {
 export function ArticlePage({ article }: ArticlePageProps) {
   const articleRef = useRef<HTMLElement>(null);
 
-  const related = article.relatedArticles || ARTICLES.filter((a) => a.slug !== article.slug).slice(0, 3);
-  const popular = popularArticles(4, article.slug);
+  // relatedArticles comes from the API response; render section only if present
+  const related: Article[] = (article.relatedArticles ?? []) as unknown as Article[];
+  // Popular list is also derived from API data passed via props (populated in getServerSideProps/getStaticProps)
+  const popular: Article[] = [];
 
   // Build TOC from actual article content; fall back to empty array
   const tocSections = useMemo(

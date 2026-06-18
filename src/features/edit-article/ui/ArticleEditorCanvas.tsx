@@ -16,14 +16,15 @@ interface Props {
 }
 
 function EditorTopbar({ editor }: Props) {
+  const isEditMode = Boolean(editor.articleId);
   return (
     <div className="editor-topbar">
-      <a className="topbar-back" href="/blog">
+      <a className="topbar-back" href="/writer/articles">
         <Icon name="arrow-left" />
-        <span className="lbl">К блогу</span>
+        <span className="lbl">Статьи</span>
       </a>
       <span className="topbar-crumb">
-        Статьи&nbsp; /&nbsp; <b>Новая статья</b>
+        Статьи&nbsp; /&nbsp; <b>{isEditMode ? "Редактировать" : "Новая статья"}</b>
       </span>
       <span className="topbar-spacer" />
       <span className={cn("save-status", editor.dirty && "is-dirty")}>

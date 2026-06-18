@@ -477,3 +477,49 @@
   .admin-body { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; overflow: auto; }
   .admin-nav, .settings-rail { display: none; }
 }
+
+/* ── Cover upload (real image) ────────────────────────────────── */
+.cover-upload-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 12px;
+}
+.cover-upload-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 36px; padding: 0 14px; border-radius: 9999px;
+  border: 1px solid var(--stroke-primary); background: #fff;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; transition: all .15s; font-family: inherit;
+  flex-shrink: 0;
+}
+.cover-upload-btn:hover:not(:disabled) {
+  border-color: var(--text-subtle); color: var(--text-primary);
+}
+.cover-upload-btn:disabled { opacity: .6; cursor: not-allowed; }
+.cover-upload-hint { font-size: 12px; color: var(--text-success); font-weight: 600; }
+
+/* Uploaded image preview */
+.cover-upload-preview {
+  position: relative; aspect-ratio: 16/9; border-radius: 10px;
+  overflow: hidden; margin-bottom: 10px;
+  border: 2px solid var(--blog-accent);
+}
+.cover-upload-preview__img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.cover-upload-preview__remove {
+  position: absolute; top: 7px; right: 7px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,.55); border: none; cursor: pointer;
+  color: #fff; display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.cover-upload-preview__remove:hover { background: rgba(0,0,0,.8); }
+.cover-upload-preview__remove .ic { font-size: 15px; }
+
+/* Spinner (reused in upload button) */
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--stroke-primary); border-top-color: var(--blog-accent);
+  animation: spin .7s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+

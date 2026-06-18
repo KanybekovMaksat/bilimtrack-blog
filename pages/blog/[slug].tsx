@@ -2,28 +2,23 @@ import type { GetStaticPaths, GetStaticProps } from "next";
 
 import { ArticlePage } from "@/pages/article";
 import { blogApi } from "@/shared/api/blog-api";
-import { ARTICLES, type Article } from "@/entities/article";
+import { type Article } from "@/entities/article";
 
 // ---------------------------------------------------------------------------
-// getStaticPaths — build paths from API, fall back to mock slugs
+// getStaticPaths — build paths from API; fallback: "blocking" handles new slugs
 // ---------------------------------------------------------------------------
 export const getStaticPaths: GetStaticPaths = async () => {
   try {
-    const res = await blogApi.getArticles({ limit: 50 });
+    const res = await blogApi.getArticles({ pageSize: 100 });
     const apiArticles: any[] = res?.data ?? [];
 
-    // Use API paths if available, otherwise fall back to mock slugs so the
-    // site stays navigable even when the API is unreachable at build time.
-    const paths =
-      apiArticles.length > 0
-        ? apiArticles.map((a: any) => ({ params: { slug: a.slug } }))
-        : ARTICLES.map((a) => ({ params: { slug: a.slug } }));
+    const paths = apiArticles.map((a: any) => ({ params: { slug: a.slug } }));
 
     return { paths, fallback: "blocking" };
   } catch (error) {
-    console.error("[getStaticPaths] API unavailable, falling back to mock slugs:", error);
+    console.error("[getStaticPaths] API unavailable:", error);
     return {
-      paths: ARTICLES.map((a) => ({ params: { slug: a.slug } })),
+      paths: [],
       fallback: "blocking",
     };
   }
@@ -49,7 +44,7 @@ export const getStaticProps: GetStaticProps<
       throw new Error(`API returned no article data for slug: ${slug}`);
     }
 
-    // Map related articles
+    // Map related articles — readingTime comes from API, no fallback needed
     const relatedArticles: Article[] = (item.relatedArticles ?? []).map(
       (r: any) => ({
         slug: r.slug,
@@ -64,7 +59,7 @@ export const getStaticProps: GetStaticProps<
             })
           : "",
         iso: r.publishedAt ?? "",
-        read: r.readingTime || 5,
+        read: r.readingTime,
         excerpt: r.excerpt ?? "",
         author: r.author ?? null,
       })
@@ -73,7 +68,6 @@ export const getStaticProps: GetStaticProps<
     const article: Article = {
       slug: item.slug,
       cat: item.category?.slug || "cases",
-      // coverImageUrl from API takes priority; fall back to css-scene key
       cover: item.coverImageUrl || "journal",
       title: item.title,
       date: item.publishedAt
@@ -84,12 +78,12 @@ export const getStaticProps: GetStaticProps<
           })
         : "",
       iso: item.publishedAt ?? "",
-      read: item.readingTime || 5,
+      // readingTime is now stable from the API — no fallback needed
+      read: item.readingTime,
       excerpt: item.excerpt ?? "",
-      // content is the HTML body returned by the API
       content: item.content ?? "",
+      featured: !!item.featured,
       relatedArticles,
-      // Preserve author object for ArticlePage to display
       author: item.author ?? null,
     };
 
@@ -99,18 +93,10 @@ export const getStaticProps: GetStaticProps<
     };
   } catch (error) {
     console.error(
-      `[getStaticProps] API failed for slug "${slug}", using mock fallback:`,
+      `[getStaticProps] API failed for slug "${slug}":`,
       error
     );
-
-    // Safe fallback — find mock article or return 404
-    const mockArticle = ARTICLES.find((a) => a.slug === slug);
-    if (!mockArticle) return { notFound: true };
-
-    return {
-      props: { article: mockArticle },
-      revalidate: 60,
-    };
+    return { notFound: true };
   }
 };
 

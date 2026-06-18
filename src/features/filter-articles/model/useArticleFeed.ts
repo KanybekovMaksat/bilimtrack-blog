@@ -1,31 +1,71 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 
-import { ARTICLES, type Article } from "@/entities/article";
 import {
-  CATEGORIES,
+  blogApi,
+  type ArticleApiItem,
+} from "@/shared/api/blog-api";
+import {
   CAT_LABEL,
   type CategoryKey,
 } from "@/entities/category";
 
 const PAGE_SIZE = 6;
 
+/** Normalised article shape consumed by UI components */
+export interface MappedArticle {
+  slug: string;
+  cat: string;
+  cover: string;
+  title: string;
+  date: string;
+  iso: string;
+  read: number;
+  excerpt: string;
+  featured: boolean;
+  author?: { id?: string; name: string; avatarUrl?: string } | null;
+  relatedArticles?: MappedArticle[];
+}
+
+function mapApiItem(item: ArticleApiItem): MappedArticle {
+  return {
+    slug: item.slug,
+    cat: item.category?.slug || "cases",
+    cover: item.coverImageUrl || "journal",
+    title: item.title,
+    date: item.publishedAt
+      ? new Date(item.publishedAt).toLocaleDateString("ru-RU", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "",
+    iso: item.publishedAt,
+    read: item.readingTime,
+    excerpt: item.excerpt,
+    featured: item.featured,
+    author: item.author,
+    relatedArticles: item.relatedArticles?.map(mapApiItem),
+  };
+}
+
 export interface ArticleFeed {
   activeCat: CategoryKey;
-  /** Value shown in the search box (may differ from the filter term). */
   inputValue: string;
   isSearching: boolean;
-  counts: Record<CategoryKey, number>;
+  /** Total count from server meta (used for UI counters). */
+  totalCount: number;
 
-  /** Featured hero post (only on the default "all" view). */
-  hero: Article | null;
-  /** Cards currently visible (sliced to the paging window). */
-  visible: Article[];
-  /** Total matches excluding the hero. */
+  /** Featured hero post — only shown on "all" + no search. */
+  hero: MappedArticle | null;
+  /** Cards currently visible. */
+  visible: MappedArticle[];
+  /** Total matching cards (excluding hero). */
   restCount: number;
   heading: string;
   isEmpty: boolean;
   emptyText: string;
   hasMore: boolean;
+  isLoading: boolean;
 
   selectCategory: (key: CategoryKey) => void;
   search: (value: string) => void;
@@ -34,92 +74,87 @@ export interface ArticleFeed {
 }
 
 /**
- * Orchestrates the blog feed: category filter + free-text search + hero
- * featured post + "load more" paging. Pure client state, no reloads.
+ * Orchestrates the blog feed via server-side API.
+ * All filtering (category, search), pagination and featured-hero selection
+ * are delegated to GET /blog/articles/ — no client-side .filter() or .slice().
  */
 export function useArticleFeed(
-  initialCategory: CategoryKey = "all",
-  initialArticles?: any[]
+  initialCategory: CategoryKey = "all"
 ): ArticleFeed {
   const [activeCat, setActiveCat] = useState<CategoryKey>(initialCategory);
   const [inputValue, setInputValue] = useState("");
   const [query, setQuery] = useState("");
-  const [shown, setShown] = useState(PAGE_SIZE);
 
-  const [fetchedArticles, setFetchedArticles] = useState<any[] | null>(initialArticles || null);
+  const [articles, setArticles] = useState<MappedArticle[]>([]);
+  const [hero, setHero] = useState<MappedArticle | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [nextUrl, setNextUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!initialArticles) {
-      import("@/shared/api/blog-api").then(({ blogApi }) => {
-        blogApi.getArticles({ limit: 50 })
-          .then(res => {
-            if (res.data) {
-              const mapped = res.data.map((item: any) => ({
-                slug: item.slug,
-                cat: item.category?.slug || "cases",
-                cover: item.coverImageUrl || "journal",
-                title: item.title,
-                date: new Date(item.publishedAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }),
-                iso: item.publishedAt,
-                read: item.readingTime || 5,
-                excerpt: item.excerpt,
-              }));
-              setFetchedArticles(mapped);
-            }
-          })
-          .catch(err => console.error("Failed to fetch articles client-side", err));
-      });
-    }
-  }, [initialArticles]);
-
-  const feedArticles = useMemo(() => fetchedArticles ? fetchedArticles : ARTICLES, [fetchedArticles]);
-
-  const counts = useMemo(() => {
-    const out = {} as Record<CategoryKey, number>;
-
-    CATEGORIES.forEach((c) => {
-      out[c.key] =
-        c.key === "all"
-          ? feedArticles.length
-          : feedArticles.filter((a) => a.cat === c.key).length;
-    });
-
-    return out;
-  }, [feedArticles]);
-
-  const filtered = useMemo(() => {
-    let list =
-      activeCat === "all"
-        ? feedArticles
-        : feedArticles.filter((a) => a.cat === activeCat);
-
-    if (query) {
-      const q = query.toLowerCase();
-
-      list = list.filter((a) =>
-        (a.title + " " + a.excerpt).toLowerCase().includes(q),
-      );
-    }
-
-    return list;
-  // feedArticles must be in deps — without it filter won't react when API data arrives
-  }, [activeCat, query, feedArticles]);
+  // Ref to current page so loadMore can increment it without stale closures
+  const pageRef = useRef(1);
 
   const isSearching = query.length > 0;
   const showHero = activeCat === "all" && !isSearching;
 
-  const hero = useMemo(() => {
-    if (!showHero) return null;
-    return feedArticles.find((a) => a.featured) ?? filtered[0] ?? null;
-  // feedArticles needed: hero picks featured article from the full list
-  }, [showHero, filtered, feedArticles]);
+  // ─── Fetch hero once on mount (featured=true) ────────────────────────────
+  useEffect(() => {
+    blogApi
+      .getArticles({ featured: true, pageSize: 1 })
+      .then((res) => {
+        if (res?.data?.length) {
+          setHero(mapApiItem(res.data[0]));
+        }
+      })
+      .catch((err) => console.error("Failed to fetch featured hero", err));
+  }, []);
 
-  const rest = useMemo(
-    () => (hero ? filtered.filter((a) => a !== hero) : filtered),
-    [filtered, hero],
-  );
+  // ─── Fetch feed whenever category or search term changes ─────────────────
+  useEffect(() => {
+    pageRef.current = 1;
+    setIsLoading(true);
+    setArticles([]);
 
-  const visible = rest.slice(0, shown);
+    const params: Parameters<typeof blogApi.getArticles>[0] = {
+      page: 1,
+      pageSize: PAGE_SIZE,
+    };
+    if (activeCat !== "all") params.category = activeCat;
+    if (query) params.search = query;
+
+    blogApi
+      .getArticles(params)
+      .then((res) => {
+        if (!res) return;
+        const mapped = (res.data ?? []).map(mapApiItem);
+        setArticles(mapped);
+        setTotalCount(res.meta?.count ?? mapped.length);
+        setNextUrl(res.meta?.next ?? null);
+      })
+      .catch((err) => console.error("Failed to fetch articles", err))
+      .finally(() => setIsLoading(false));
+  }, [activeCat, query]);
+
+  // ─── Load next page ───────────────────────────────────────────────────────
+  const loadMore = useCallback(() => {
+    if (!nextUrl || isLoading) return;
+    setIsLoading(true);
+
+    fetch(nextUrl)
+      .then((r) => r.json())
+      .then((res) => {
+        const mapped = (res.data ?? []).map(mapApiItem);
+        setArticles((prev) => [...prev, ...mapped]);
+        setNextUrl(res.meta?.next ?? null);
+      })
+      .catch((err) => console.error("Failed to load more articles", err))
+      .finally(() => setIsLoading(false));
+  }, [nextUrl, isLoading]);
+
+  // ─── When hero is shown we exclude it from the card grid ─────────────────
+  const visible = showHero && hero
+    ? articles.filter((a) => a.slug !== hero.slug)
+    : articles;
 
   const heading = showHero
     ? "Свежие статьи"
@@ -127,42 +162,39 @@ export function useArticleFeed(
       ? `Результаты: «${query}»`
       : CAT_LABEL[activeCat];
 
+  // ─── Event handlers ───────────────────────────────────────────────────────
   const selectCategory = useCallback((key: CategoryKey) => {
     setActiveCat(key);
     setQuery("");
     setInputValue("");
-    setShown(PAGE_SIZE);
   }, []);
 
   const search = useCallback((value: string) => {
     setInputValue(value);
     setQuery(value.trim());
-    setShown(PAGE_SIZE);
   }, []);
 
   const applyTopic = useCallback((label: string, term: string) => {
     setActiveCat("all");
     setInputValue(label);
     setQuery(term);
-    setShown(PAGE_SIZE);
   }, []);
-
-  const loadMore = useCallback(() => setShown((s) => s + PAGE_SIZE), []);
 
   return {
     activeCat,
     inputValue,
     isSearching,
-    counts,
-    hero,
+    totalCount,
+    hero: showHero ? hero : null,
     visible,
-    restCount: rest.length,
+    restCount: visible.length,
     heading,
-    isEmpty: rest.length === 0,
+    isEmpty: !isLoading && visible.length === 0,
     emptyText: isSearching
       ? "По запросу ничего не найдено. Попробуйте другой запрос."
       : "В этой категории пока нет статей.",
-    hasMore: rest.length > shown,
+    hasMore: nextUrl !== null,
+    isLoading,
     selectCategory,
     search,
     applyTopic,

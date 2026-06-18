@@ -28,11 +28,14 @@ interface Snapshot {
   bodyHtml: string;
   cat: ArticleCategory;
   cover: CoverScene | null;
+  /** Real URL of the uploaded cover image — takes priority over CSS preset */
+  coverImageUrl: string | null;
   status: EditorStatus;
   slug: string;
   date: string;
   seoTitle: string;
   seoDesc: string;
+  selectedAuthorId: string | null;
 }
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -55,14 +58,28 @@ function resolveCategoryUuid(
 
 /**
  * Build the POST/PATCH payload for /cms/articles/ per the API spec.
+ *
  * Field names: titleRu, excerptRu, contentRu, category (UUID string),
- * author (UUID string), slug, status, coverImageUrl, seoTitleRu, seoDescriptionRu.
+ * author (UUID string), slug, status, publishedAt (ISO 8601),
+ * coverImageUrl, seoTitleRu, seoDescriptionRu.
  */
 function buildArticlePayload(
   data: Snapshot,
   categoryUuid: string,
   authorUuid: string | null
 ) {
+  // publishedAt: prefer the chosen date; if empty fall back to now (required by API)
+  const publishedAt = data.date
+    ? new Date(data.date).toISOString()
+    : new Date().toISOString();
+
+  // Cover: real uploaded URL takes priority over CSS-preset CDN path
+  const coverImageUrl =
+    data.coverImageUrl ??
+    (data.cover
+      ? `https://cdn.bilimtrack.com/blog/covers/${data.cover}.webp`
+      : null);
+
   return {
     titleRu: data.title,
     excerptRu: data.excerpt,
@@ -73,9 +90,8 @@ function buildArticlePayload(
     ...(authorUuid ? { author: authorUuid } : {}),
     status: data.status,
     slug: data.slug || slugify(data.title),
-    coverImageUrl: data.cover
-      ? `https://cdn.bilimtrack.com/blog/covers/${data.cover}.webp`
-      : null,
+    publishedAt,
+    coverImageUrl,
     // API does not accept null for SEO fields — fall back to title/excerpt
     seoTitleRu: data.seoTitle || data.title || "—",
     seoDescriptionRu: data.seoDesc || data.excerpt || "—",
@@ -136,12 +152,16 @@ export function useArticleEditor() {
   const [excerpt, setExcerpt] = useState("");
   const [cat, setCat] = useState<ArticleCategory>("cases");
   const [cover, setCover] = useState<CoverScene | null>(null);
+  /** Real URL returned by the media upload endpoint — takes priority over CSS preset */
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [status, setStatus] = useState<EditorStatus>("draft");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [pubDate, setPubDate] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
 
   const [categoriesList, setCategoriesList] = useState<
     { id: string; name: string; slug: string }[]
@@ -204,11 +224,13 @@ export function useArticleEditor() {
       bodyHtml,
       cat,
       cover,
+      coverImageUrl,
       status,
       slug,
       date: pubDate,
       seoTitle,
       seoDesc,
+      selectedAuthorId,
     };
   };
 
@@ -230,7 +252,8 @@ export function useArticleEditor() {
       return;
     }
 
-    const authorUuid = authorsList[0]?.id ?? null;
+    // Author: prefer explicitly selected, fall back to first in list
+    const authorUuid = data.selectedAuthorId ?? authorsList[0]?.id ?? null;
     const payload = buildArticlePayload(data, categoryUuid, authorUuid);
 
     console.log("=== CMS SEND DATA ===", payload);
@@ -271,7 +294,7 @@ export function useArticleEditor() {
     } catch (err) {
       console.error("Autosave API request failed:", err);
     }
-  }, [articleId, title, excerpt, cat, cover, status, slug, pubDate, seoTitle, seoDesc, categoriesList, authorsList]);
+  }, [articleId, title, excerpt, cat, cover, coverImageUrl, status, slug, pubDate, seoTitle, seoDesc, selectedAuthorId, categoriesList, authorsList]);
 
   const markDirty = useCallback(() => {
     setDirty(true);
@@ -283,7 +306,7 @@ export function useArticleEditor() {
     if (!mounted.current) return;
     markDirty();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, excerpt, cat, cover, status, slug, pubDate, seoTitle, seoDesc]);
+  }, [title, excerpt, cat, cover, coverImageUrl, status, slug, pubDate, seoTitle, seoDesc, selectedAuthorId]);
 
   const onBodyChange = useCallback(async () => {
     markDirty();
@@ -293,6 +316,8 @@ export function useArticleEditor() {
   }, [title, excerpt, markDirty]);
 
   const pickCover = useCallback((scene: CoverScene) => {
+    // Selecting a CSS-preset clears any uploaded image URL
+    setCoverImageUrl(null);
     setCover((cur) => (cur === scene ? null : scene));
   }, []);
 
@@ -304,6 +329,36 @@ export function useArticleEditor() {
     setSlugTouched(true);
     setSlug(value);
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // uploadCover() — upload a real image file and store the returned URL
+  // ---------------------------------------------------------------------------
+  const uploadCover = useCallback(async (file: File) => {
+    const token = localStorage.getItem("cms_token");
+    if (!token) {
+      showToast("Требуется авторизация для загрузки", "bolt");
+      return;
+    }
+
+    setIsUploadingCover(true);
+    try {
+      const result = await cmsApi.uploadCoverImage(token, file);
+      if (result?.url) {
+        setCoverImageUrl(result.url);
+        // Clear the CSS-preset selection — real image takes over
+        setCover(null);
+        showToast("Обложка загружена", "check");
+        markDirty();
+      } else {
+        showToast("Не удалось загрузить обложку. Проверьте эндпоинт.", "bolt");
+      }
+    } catch (err) {
+      console.error("uploadCover error:", err);
+      showToast("Сетевая ошибка при загрузке обложки", "bolt");
+    } finally {
+      setIsUploadingCover(false);
+    }
+  }, [showToast, markDirty]);
 
   const saveDraft = useCallback(async () => {
     await save();
@@ -339,7 +394,7 @@ export function useArticleEditor() {
           return;
         }
 
-        const authorUuid = authorsList[0]?.id ?? null;
+        const authorUuid = data.selectedAuthorId ?? authorsList[0]?.id ?? null;
         const payload = buildArticlePayload(
           { ...data, status: "draft" },
           categoryUuid,
@@ -457,9 +512,81 @@ export function useArticleEditor() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Restore draft from localStorage on mount
+  // Load article by ?id= from URL query (edit mode)
   // ---------------------------------------------------------------------------
   useEffect(() => {
+    // router.query is populated after hydration — wait for it
+    if (!router.isReady) return;
+
+    const editId = router.query.id as string | undefined;
+    if (!editId) return; // No id param — new article mode, handled by draft restore below
+
+    const token = localStorage.getItem("cms_token");
+    if (!token) return;
+
+    cmsApi
+      .getArticle(token, editId)
+      .then((res) => {
+        const item: any = res?.data ?? null;
+        if (!item) {
+          console.error("Article not found for id:", editId);
+          return;
+        }
+
+        setArticleId(item.id ?? editId);
+        setTitle(item.titleRu ?? item.title ?? "");
+        setExcerpt(item.excerptRu ?? item.excerpt ?? "");
+
+        // Map category slug → ArticleCategory key
+        const catSlug: string = item.category?.slug ?? "cases";
+        setCat(catSlug as ArticleCategory);
+
+        // Cover: if a real URL is stored, prefer it; otherwise derive preset from the URL
+        if (item.coverImageUrl && item.coverImageUrl.startsWith("http")) {
+          setCoverImageUrl(item.coverImageUrl);
+          setCover(null);
+        }
+
+        setStatus(item.status === "published" ? "published" : "draft");
+        setSlug(item.slug ?? "");
+        if (item.slug) setSlugTouched(true);
+        setPubDate(
+          item.publishedAt
+            ? item.publishedAt.slice(0, 10)
+            : todayISO()
+        );
+        setSeoTitle(item.seoTitleRu ?? item.seoTitle ?? "");
+        setSeoDesc(item.seoDescriptionRu ?? item.seoDesc ?? "");
+        setInitialHtml(item.contentRu ?? item.content ?? "");
+
+        // Pre-select author if one is set
+        if (item.author?.id) {
+          setSelectedAuthorId(item.author.id);
+        }
+
+        // Clear localStorage draft so it doesn't overwrite the loaded data
+        localStorage.removeItem(DRAFT_KEY);
+      })
+      .catch((err) => console.error("Failed to load article for editing:", err))
+      .finally(() => {
+        // Mark as mounted and ready even if load failed
+        setTimeout(() => {
+          mounted.current = true;
+          setIsReady(true);
+        }, 0);
+      });
+  }, [router.isReady, router.query.id]);
+
+  // ---------------------------------------------------------------------------
+  // Restore draft from localStorage on mount (new article mode only)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    // If ?id= is present, the effect above handles loading — skip localStorage
+    const editId = router.query.id as string | undefined;
+    if (editId) return;
+
     const seedExample = () => {
       setCat("cases");
       setCover("journal");
@@ -483,6 +610,7 @@ export function useArticleEditor() {
         setExcerpt(d.excerpt || "");
         setCat(d.cat || "cases");
         setCover(d.cover ?? null);
+        setCoverImageUrl(d.coverImageUrl ?? null);
         setStatus(d.status || "draft");
         setSlug(d.slug || "");
         if (d.slug) setSlugTouched(true);
@@ -490,6 +618,7 @@ export function useArticleEditor() {
         setSeoTitle(d.seoTitle || "");
         setSeoDesc(d.seoDesc || "");
         setInitialHtml(d.bodyHtml || "");
+        setSelectedAuthorId(d.selectedAuthorId ?? null);
       } catch {
         seedExample();
       }
@@ -504,7 +633,7 @@ export function useArticleEditor() {
 
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router.isReady, router.query.id]);
 
   return {
     refs: { titleRef, excerptRef, getEditorHTMLRef },
@@ -513,12 +642,15 @@ export function useArticleEditor() {
     excerpt,
     cat,
     cover,
+    coverImageUrl,
+    isUploadingCover,
     status,
     slug,
     slugAuto: !slugTouched,
     pubDate,
     seoTitle,
     seoDesc,
+    selectedAuthorId,
     words,
     wordLabel,
     readMinutes,
@@ -538,10 +670,12 @@ export function useArticleEditor() {
     setPubDate,
     setSeoTitle,
     setSeoDesc,
+    setSelectedAuthorId,
     editSlug,
     onBodyChange,
     pickCover,
     ensureCover,
+    uploadCover,
     saveDraft,
     publish,
     archive,

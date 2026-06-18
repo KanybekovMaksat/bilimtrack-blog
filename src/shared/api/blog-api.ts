@@ -69,17 +69,63 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
 // ---------------------------------------------------------------------------
 // Public API (no auth required)
 // ---------------------------------------------------------------------------
+/** Shape of the paginated list response from GET /blog/articles/ */
+export interface ArticleListResponse {
+  data: ArticleApiItem[];
+  meta: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+  };
+}
+
+/** Article object as returned by the public API */
+export interface ArticleApiItem {
+  slug: string;
+  title: string;
+  excerpt: string;
+  coverImageUrl: string | null;
+  publishedAt: string;
+  readingTime: number;
+  featured: boolean;
+  category: { slug: string; name: string } | null;
+  author: { id?: string; name: string; avatarUrl?: string } | null;
+  relatedArticles?: ArticleApiItem[];
+}
+
 export const blogApi = {
-  /** GET /blog/articles/ — list of published articles */
+  /**
+   * GET /blog/articles/ — paginated list of published articles.
+   *
+   * Supported params (all optional):
+   *   search   — full-text search by title and excerpt (server-side)
+   *   featured — when "true" returns only featured articles
+   *   category — category slug filter
+   *   lang     — language code (default "ru")
+   *   page     — 1-based page number
+   *   pageSize — number of items per page
+   *
+   * Response: { data: ArticleApiItem[], meta: { count, next, previous } }
+   */
   getArticles: (params: {
     lang?: string;
     category?: string;
+    featured?: boolean;
+    search?: string;
     page?: number;
-    limit?: number;
-  }) =>
-    fetch(
-      `${BASE}/blog/articles/?${new URLSearchParams(params as Record<string, string>)}`
-    ).then((r) => r.json()),
+    pageSize?: number;
+  }): Promise<ArticleListResponse> => {
+    const query: Record<string, string> = {};
+    if (params.lang)      query.lang      = params.lang;
+    if (params.category)  query.category  = params.category;
+    if (params.search)    query.search    = params.search;
+    if (params.featured)  query.featured  = "true";
+    if (params.page)      query.page      = String(params.page);
+    if (params.pageSize)  query.pageSize  = String(params.pageSize);
+    return fetch(
+      `${BASE}/blog/articles/?${new URLSearchParams(query)}`
+    ).then((r) => r.json());
+  },
 
   /** GET /blog/articles/:slug/ — full article by slug */
   getArticle: (slug: string, lang = "ru") =>
@@ -165,9 +211,10 @@ export const cmsApi = {
   getArticle: (_token: string, id: string) =>
     fetchWithAuth(`${BASE}/cms/articles/${id}/`),
 
-  /** POST /cms/articles/
-   *  Body per spec: titleRu, excerptRu, contentRu, category (UUID), author (UUID),
-   *  slug, status, coverImageUrl, seoTitleRu, seoDescriptionRu
+  /**
+   * POST /cms/articles/
+   * Body fields: titleRu, excerptRu, contentRu, category (UUID), author (UUID),
+   *   slug, status, publishedAt (ISO 8601), coverImageUrl, seoTitleRu, seoDescriptionRu
    */
   createArticle: (_token: string, body: object) =>
     fetchWithAuth(`${BASE}/cms/articles/`, {
@@ -175,7 +222,10 @@ export const cmsApi = {
       body: JSON.stringify(body),
     }),
 
-  /** PATCH /cms/articles/:id/ */
+  /**
+   * PATCH /cms/articles/:id/
+   * Accepts same fields as createArticle (all optional for partial update).
+   */
   updateArticle: (_token: string, id: string, body: object) =>
     fetchWithAuth(`${BASE}/cms/articles/${id}/`, {
       method: "PATCH",
@@ -193,6 +243,29 @@ export const cmsApi = {
   /** POST /cms/articles/:id/archive/ */
   archiveArticle: (_token: string, id: string) =>
     fetchWithAuth(`${BASE}/cms/articles/${id}/archive/`, { method: "POST" }),
+
+  /**
+   * POST /cms/media/upload/ — upload a cover image.
+   *
+   * TODO: Заменить на реальный API когда бэкенд будет готов.
+   *       Эндпоинт: POST ${BASE}/cms/media/upload/
+   *       Тело: FormData { file: File }
+   *       Ответ: { data: { url: string } }
+   *
+   * 🚧 MOCK — имитирует задержку сети и возвращает локальный Object URL.
+   *    Object URL живёт только в текущей вкладке браузера (не сохраняется).
+   */
+  uploadCoverImage: async (_token: string, file: File): Promise<{ url: string } | null> => {
+    if (typeof window === "undefined") return null;
+
+    // Simulate ~1 second network round-trip
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Create a temporary browser-local URL for the file — works without a server
+    const url = URL.createObjectURL(file);
+    return { url };
+  },
+
 
   // --- Categories CRUD ---
 

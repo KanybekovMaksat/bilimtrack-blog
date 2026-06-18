@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ArticleCover } from "@/entities/article";
 import type { ArticleCategory } from "@/entities/category";
 import { Button, Icon } from "@/shared/ui";
@@ -9,15 +10,31 @@ interface Props {
   editor: ArticleEditorApi;
 }
 
-const CAT_OPTIONS: { value: ArticleCategory; label: string }[] = [
-  { value: "cases", label: "Кейсы" },
+/** Fallback category list used when the API hasn't responded yet. */
+const FALLBACK_CATS: { value: ArticleCategory; label: string }[] = [
+  { value: "cases",  label: "Кейсы" },
   { value: "manage", label: "Управление школой" },
   { value: "advice", label: "Советы директору" },
-  { value: "news", label: "Новости" },
+  { value: "news",   label: "Новости" },
 ];
 
 /** Right settings rail: status, category, reading time, slug, cover, SEO. */
 export function EditorSettingsRail({ editor }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Build category options: prefer API data, fall back to static list
+  const catOptions =
+    editor.categoriesList.length > 0
+      ? editor.categoriesList.map((c) => ({ value: c.slug as ArticleCategory, label: c.name }))
+      : FALLBACK_CATS;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) editor.uploadCover(file);
+    // Reset input so the same file can be re-uploaded if needed
+    e.target.value = "";
+  };
+
   return (
     <aside className="settings-rail">
       <div className="rail-actions">
@@ -30,6 +47,7 @@ export function EditorSettingsRail({ editor }: Props) {
         </Button>
       </div>
 
+      {/* ── Status ─────────────────────────────────────────────────────────── */}
       <div className="rail-block">
         <p className="rail-label">Статус</p>
         <div className="segment">
@@ -54,6 +72,7 @@ export function EditorSettingsRail({ editor }: Props) {
         </div>
       </div>
 
+      {/* ── Category ───────────────────────────────────────────────────────── */}
       <div className="rail-block">
         <p className="rail-label">
           <Icon name="tag" />
@@ -64,7 +83,7 @@ export function EditorSettingsRail({ editor }: Props) {
           value={editor.cat}
           onChange={(e) => editor.setCat(e.target.value as ArticleCategory)}
         >
-          {CAT_OPTIONS.map((o) => (
+          {catOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
@@ -72,6 +91,31 @@ export function EditorSettingsRail({ editor }: Props) {
         </select>
       </div>
 
+      {/* ── Author ─────────────────────────────────────────────────────────── */}
+      {editor.authorsList.length > 0 && (
+        <div className="rail-block">
+          <p className="rail-label">
+            <Icon name="user" />
+            Автор
+          </p>
+          <select
+            className="field-select"
+            value={editor.selectedAuthorId ?? ""}
+            onChange={(e) =>
+              editor.setSelectedAuthorId(e.target.value || null)
+            }
+          >
+            <option value="">— выбрать автора —</option>
+            {editor.authorsList.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* ── Reading time ────────────────────────────────────────────────────── */}
       <div className="rail-block">
         <p className="rail-label">
           <Icon name="clock" />
@@ -88,6 +132,7 @@ export function EditorSettingsRail({ editor }: Props) {
         </div>
       </div>
 
+      {/* ── Publication date & slug ─────────────────────────────────────────── */}
       <div className="rail-block">
         <p className="rail-label">
           <Icon name="calendar" />
@@ -119,25 +164,85 @@ export function EditorSettingsRail({ editor }: Props) {
         </div>
       </div>
 
+      {/* ── Cover ───────────────────────────────────────────────────────────── */}
       <div className="rail-block">
         <p className="rail-label">
           <Icon name="photo" />
           Обложка
         </p>
-        <div className="cover-presets">
-          {editor.scenes.map((scene) => (
+
+        {/* Uploaded real image preview */}
+        {editor.coverImageUrl && (
+          <div className="cover-upload-preview">
+            <img
+              src={editor.coverImageUrl}
+              alt="Обложка статьи"
+              className="cover-upload-preview__img"
+            />
             <button
-              key={scene}
-              className={editor.cover === scene ? "is-active" : ""}
+              className="cover-upload-preview__remove"
               type="button"
-              onClick={() => editor.pickCover(scene)}
+              title="Удалить загруженное изображение"
+              onClick={() => {
+                // Remove uploaded URL — user can pick a preset instead
+                editor.pickCover("journal");
+              }}
             >
-              <ArticleCover cat={editor.cat} cover={scene} />
+              <Icon name="x" />
             </button>
-          ))}
+          </div>
+        )}
+
+        {/* CSS-preset grid (hidden while real image is active) */}
+        {!editor.coverImageUrl && (
+          <div className="cover-presets">
+            {editor.scenes.map((scene) => (
+              <button
+                key={scene}
+                className={editor.cover === scene ? "is-active" : ""}
+                type="button"
+                onClick={() => editor.pickCover(scene)}
+              >
+                <ArticleCover cat={editor.cat} cover={scene} />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Upload own image */}
+        <div className="cover-upload-row">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
+          <button
+            className={cn("cover-upload-btn", editor.isUploadingCover && "is-loading")}
+            type="button"
+            disabled={editor.isUploadingCover}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {editor.isUploadingCover ? (
+              <>
+                <span className="spinner" />
+                Загрузка...
+              </>
+            ) : (
+              <>
+                <Icon name="upload" />
+                {editor.coverImageUrl ? "Заменить изображение" : "Загрузить своё"}
+              </>
+            )}
+          </button>
+          {editor.coverImageUrl && (
+            <span className="cover-upload-hint">Загружено ✓</span>
+          )}
         </div>
       </div>
 
+      {/* ── SEO & OG ────────────────────────────────────────────────────────── */}
       <div className="rail-block">
         <p className="rail-label">SEO и превью</p>
         <div className="field">
@@ -170,6 +275,7 @@ export function EditorSettingsRail({ editor }: Props) {
         </div>
       </div>
 
+      {/* ── Danger zone ─────────────────────────────────────────────────────── */}
       <div className="rail-block">
         <button className="rail-danger" type="button" onClick={editor.deleteDraft}>
           <Icon name="trash" />
