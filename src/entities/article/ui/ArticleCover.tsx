@@ -9,13 +9,16 @@ interface ArticleCoverProps {
   className?: string;
 }
 
-/** Renders a styled placeholder cover scene for the given category. */
 export function ArticleCover({ cat, cover, className }: ArticleCoverProps) {
-  if (cover && cover.startsWith("http")) {
+  // Дефолтная обложка, если она почему-то не задана
+  const safeCover = cover || "journal";
+
+  // Поддерживаем реальные URL (http) и локальные mock-ссылки (blob)
+  if (safeCover.startsWith("http") || safeCover.startsWith("blob:") || safeCover.startsWith("/")) {
     return (
       <div className={className} style={{ display: "contents" }}>
         <div className={`cover cover--${cat}`} style={{ overflow: 'hidden' }}>
-          <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={safeCover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       </div>
     );
@@ -25,7 +28,7 @@ export function ArticleCover({ cat, cover, className }: ArticleCoverProps) {
     <div
       className={className}
       style={{ display: "contents" }}
-      dangerouslySetInnerHTML={{ __html: coverHtml({ cat, cover }) }}
+      dangerouslySetInnerHTML={{ __html: coverHtml({ cat, cover: safeCover as CoverScene }) }}
     />
   );
 }

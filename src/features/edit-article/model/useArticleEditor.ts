@@ -155,6 +155,7 @@ export function useArticleEditor() {
   /** Real URL returned by the media upload endpoint — takes priority over CSS preset */
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [status, setStatus] = useState<EditorStatus>("draft");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -287,6 +288,10 @@ export function useArticleEditor() {
             DRAFT_KEY,
             JSON.stringify({ ...data, id: res.data.id })
           );
+          // Upgrade URL silently to edit mode so page reload doesn't lose the session
+          if (!router.query.id) {
+            router.replace(`/writer/admin?id=${res.data.id}`, undefined, { shallow: true });
+          }
         } else if (res && Object.keys(res).length > 0) {
           console.error("=== CMS CREATE ERROR ===", res);
         }
@@ -294,7 +299,7 @@ export function useArticleEditor() {
     } catch (err) {
       console.error("Autosave API request failed:", err);
     }
-  }, [articleId, title, excerpt, cat, cover, coverImageUrl, status, slug, pubDate, seoTitle, seoDesc, selectedAuthorId, categoriesList, authorsList]);
+  }, [articleId, title, excerpt, cat, cover, coverImageUrl, status, slug, pubDate, seoTitle, seoDesc, selectedAuthorId, categoriesList, authorsList, router]);
 
   const markDirty = useCallback(() => {
     setDirty(true);
@@ -369,6 +374,7 @@ export function useArticleEditor() {
   // publish()
   // ---------------------------------------------------------------------------
   const publish = useCallback(async () => {
+    if (isPublishing) return;
     if (!title.trim()) {
       titleRef.current?.focus();
       showToast("Добавьте заголовок статьи", "bolt");
@@ -382,6 +388,7 @@ export function useArticleEditor() {
       return;
     }
 
+    setIsPublishing(true);
     try {
       let currentId = articleId;
 
@@ -391,6 +398,7 @@ export function useArticleEditor() {
         const categoryUuid = resolveCategoryUuid(categoriesList, data.cat);
         if (!categoryUuid) {
           showToast("Категории загружаются, подождите секунду и повторите", "bolt");
+          setIsPublishing(false);
           return;
         }
 
@@ -414,6 +422,7 @@ export function useArticleEditor() {
         } else {
           showToast("Ошибка создания: " + parseDjangoError(res?.data ?? res), "bolt");
           console.error("=== CMS CREATE ERROR ===", res);
+          setIsPublishing(false);
           return;
         }
       }
@@ -424,17 +433,36 @@ export function useArticleEditor() {
         const res = await cmsApi.publishArticle(token, currentId);
         // Success: res may be empty 200 or { data: {...} }
         if (res?.detail || res?.error) {
-          showToast("Ошибка публикации: " + parseDjangoError(res), "bolt");
-          return;
+          const errStr = parseDjangoError(res);
+          // Если бэкенд уже опубликовал её (например, из-за переданного publishedAt)
+          // или если был случайный двойной клик — считаем это успехом
+          if (errStr.toLowerCase().includes("опубликована")) {
+             console.log("Article was already published by backend.");
+          } else {
+            showToast("Ошибка публикации: " + errStr, "bolt");
+            setIsPublishing(false);
+            return;
+          }
         }
         setStatus("published");
         showToast("Статья успешно опубликована 🎉", "check");
+        
+        // Логическое завершение — перенаправляем к списку статей, 
+        // дав пользователю время (1.5с) прочитать toast-уведомление.
+        setTimeout(() => {
+          router.push("/writer/articles");
+        }, 1500);
+        
+        // Намеренно НЕ сбрасываем isPublishing(false), чтобы 
+        // кнопки оставались заблокированными до ухода со страницы.
+        return;
       }
     } catch (e) {
       console.error("Publish error:", e);
       showToast("Сетевая ошибка при публикации", "bolt");
+      setIsPublishing(false);
     }
-  }, [articleId, title, categoriesList, authorsList, router, showToast]);
+  }, [articleId, title, categoriesList, authorsList, router, showToast, isPublishing]);
 
   // ---------------------------------------------------------------------------
   // archive()
@@ -605,6 +633,16 @@ export function useArticleEditor() {
     if (raw) {
       try {
         const d = JSON.parse(raw) as Snapshot;
+        
+        // Если черновик уже принадлежит сохранённой статье (есть ID) или опубликован, 
+        // а пользователь зашёл на `/writer/admin` (без ?id=), значит он нажал "+ Новая статья".
+        // Мы должны дать ему чистый лист, а не воскрешать прошлую статью.
+        if (d.status === "published" || d.id) {
+          localStorage.removeItem(DRAFT_KEY);
+          seedExample();
+          return;
+        }
+
         setArticleId(d.id || null);
         setTitle(d.title || "");
         setExcerpt(d.excerpt || "");
@@ -644,6 +682,7 @@ export function useArticleEditor() {
     cover,
     coverImageUrl,
     isUploadingCover,
+    isPublishing,
     status,
     slug,
     slugAuto: !slugTouched,

@@ -201,6 +201,16 @@ export default function WriterArticlesPage() {
                           >
                             Редактировать
                           </NextLink>
+                          {a.status === "published" && a.slug && (
+                            <NextLink
+                              href={`/blog/${a.slug}`}
+                              target="_blank"
+                              className="art-edit-btn"
+                              style={{ color: "var(--primary, #3b82f6)", borderColor: "var(--primary, #3b82f6)" }}
+                            >
+                              Смотреть ↗
+                            </NextLink>
+                          )}
                           <button
                             className="art-edit-btn"
                             style={{ color: "var(--danger, #dc2626)", borderColor: "var(--danger, #dc2626)" }}

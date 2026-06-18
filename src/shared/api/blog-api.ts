@@ -24,46 +24,56 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
     ...((options.headers as Record<string, string> | undefined) ?? {}),
   });
 
-  let res = await fetch(url, { ...options, headers: buildHeaders(token) });
+  try {
+    let res = await fetch(url, { ...options, headers: buildHeaders(token) });
 
-  // Auto-refresh on 401
-  if (res.status === 401) {
-    const refresh = localStorage.getItem("cms_refresh_token");
-    if (refresh) {
-      try {
-        const refreshRes = await fetch(`${BASE}/auth/refresh/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh }),
-        });
-        const refreshData = await refreshRes.json();
-        const newAccess =
-          refreshData?.data?.access ?? refreshData?.access ?? null;
+    // Auto-refresh on 401
+    if (res.status === 401) {
+      const refresh = localStorage.getItem("cms_refresh_token");
+      if (refresh) {
+        try {
+          const refreshRes = await fetch(`${BASE}/auth/refresh/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh }),
+          });
+          const refreshData = await refreshRes.json();
+          const newAccess =
+            refreshData?.data?.access ?? refreshData?.access ?? null;
 
-        if (newAccess) {
-          localStorage.setItem("cms_token", newAccess);
-          res = await fetch(url, { ...options, headers: buildHeaders(newAccess) });
-        } else {
-          // Refresh token expired — clear session
-          localStorage.removeItem("cms_token");
-          localStorage.removeItem("cms_refresh_token");
+          if (newAccess) {
+            localStorage.setItem("cms_token", newAccess);
+            res = await fetch(url, { ...options, headers: buildHeaders(newAccess) });
+          } else {
+            // Refresh token expired — clear session
+            localStorage.removeItem("cms_token");
+            localStorage.removeItem("cms_refresh_token");
+          }
+        } catch (err) {
+          console.error("JWT refresh failed:", err);
         }
-      } catch (err) {
-        console.error("JWT refresh failed:", err);
       }
     }
-  }
 
-  // 204 No Content or empty body — return null instead of crashing on .json()
-  if (res.status === 204) return null;
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
+    // 204 No Content or empty body — return null instead of crashing on .json()
+    if (res.status === 204) return null;
+    const text = await res.text();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  } catch (err) {
+    // Network-level error (server unreachable, DNS failure, CORS, etc.)
+    // Return null gracefully — callers already handle null responses.
+    // Used console.warn instead of console.error to prevent Next.js
+    // from showing the red error overlay during the mock demo.
+    console.warn(`fetchWithAuth error [${url}]:`, err);
+    return null;
   }
 }
+
 
 
 // ---------------------------------------------------------------------------
