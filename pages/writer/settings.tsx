@@ -2,17 +2,58 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { EditorNav } from "@/widgets/editor-nav";
+import { cmsApi } from "@/shared/api/blog-api";
+
+interface UserMe {
+  id?: string;
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  role?: string;
+  isStaff?: boolean;
+}
+
+function getFullName(u: UserMe | null): string {
+  if (!u) return "—";
+  if (u.name) return u.name;
+  if (u.firstName || u.lastName) return `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+  return u.username ?? "—";
+}
+
+function getInitials(u: UserMe | null): string {
+  const name = getFullName(u);
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "АД";
+}
 
 export default function WriterSettingsPage() {
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
-  const [blogName, setBlogName] = useState("Bilimtrack Blog");
-  const [blogDesc, setBlogDesc] = useState("Практические материалы для руководителей учебных организаций.");
+  const [user, setUser] = useState<UserMe | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
-    else setIsAuth(true);
+    const token = localStorage.getItem("cms_token");
+    if (!token) {
+      router.replace("/writer/login");
+    } else {
+      setIsAuth(true);
+      // Load current user data
+      cmsApi.getUserMe(token)
+        .then((res) => {
+          const u: UserMe = res?.data ?? res;
+          if (u?.id || u?.username || u?.email) {
+            setUser(u);
+          }
+        })
+        .catch((err) => console.error("Failed to load user:", err));
+    }
   }, [router]);
 
   if (!isAuth) return null;
@@ -22,7 +63,15 @@ export default function WriterSettingsPage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const refresh = localStorage.getItem("cms_refresh_token");
+    if (refresh) {
+      try {
+        await cmsApi.logout(refresh);
+      } catch {
+        // ignore logout error
+      }
+    }
     localStorage.removeItem("cms_token");
     localStorage.removeItem("cms_refresh_token");
     router.replace("/writer/login");
@@ -55,16 +104,14 @@ export default function WriterSettingsPage() {
                   <label className="rail-label">Название блога</label>
                   <input
                     className="field-input"
-                    value={blogName}
-                    onChange={(e) => setBlogName(e.target.value)}
+                    defaultValue="Bilimtrack Blog"
                   />
                 </div>
                 <div className="field">
                   <label className="rail-label">Описание</label>
                   <textarea
                     className="field-textarea"
-                    value={blogDesc}
-                    onChange={(e) => setBlogDesc(e.target.value)}
+                    defaultValue="Практические материалы для руководителей учебных организаций."
                     rows={3}
                   />
                 </div>
@@ -92,19 +139,39 @@ export default function WriterSettingsPage() {
               <h2 className="settings-section__title">Аккаунт</h2>
               <div className="settings-fields">
                 <div className="settings-account-card">
-                  <div className="settings-avatar">АН</div>
+                  <div className="settings-avatar">{getInitials(user)}</div>
                   <div>
-                    <div className="settings-account__name">А. Усенова</div>
-                    <div className="settings-account__role">Главный редактор</div>
+                    <div className="settings-account__name">{getFullName(user)}</div>
+                    <div className="settings-account__role">
+                      {user?.role ?? (user?.isStaff ? "Администратор" : "Редактор")}
+                    </div>
                   </div>
                 </div>
                 <div className="field">
                   <label className="rail-label">Email</label>
-                  <input className="field-input" defaultValue="a.usenova@bilimtrack.com" disabled />
+                  <input
+                    className="field-input"
+                    value={user?.email ?? ""}
+                    readOnly
+                    disabled
+                  />
+                </div>
+                <div className="field">
+                  <label className="rail-label">Имя пользователя</label>
+                  <input
+                    className="field-input"
+                    value={user?.username ?? ""}
+                    readOnly
+                    disabled
+                  />
                 </div>
                 <div className="field">
                   <label className="rail-label">Новый пароль</label>
-                  <input className="field-input" type="password" placeholder="Оставьте пустым, чтобы не менять" />
+                  <input
+                    className="field-input"
+                    type="password"
+                    placeholder="Оставьте пустым, чтобы не менять"
+                  />
                 </div>
               </div>
             </div>

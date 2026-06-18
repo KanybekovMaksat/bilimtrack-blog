@@ -13,8 +13,10 @@ const BASE = "https://api.bilimtrack.com/api/v1";
 // Core fetch helper — reads token from localStorage, handles 401 + refresh
 // ---------------------------------------------------------------------------
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<any> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("cms_token") : null;
+  // Guard: CMS API should only be called client-side (requires localStorage)
+  if (typeof window === "undefined") return null;
+
+  const token = localStorage.getItem("cms_token");
 
   const buildHeaders = (t: string | null): Record<string, string> => ({
     "Content-Type": "application/json",
@@ -25,7 +27,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
   let res = await fetch(url, { ...options, headers: buildHeaders(token) });
 
   // Auto-refresh on 401
-  if (res.status === 401 && typeof window !== "undefined") {
+  if (res.status === 401) {
     const refresh = localStorage.getItem("cms_refresh_token");
     if (refresh) {
       try {
@@ -52,8 +54,17 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
     }
   }
 
-  return res.json();
+  // 204 No Content or empty body — return null instead of crashing on .json()
+  if (res.status === 204) return null;
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
+
 
 // ---------------------------------------------------------------------------
 // Public API (no auth required)
@@ -188,6 +199,10 @@ export const cmsApi = {
   /** GET /cms/categories/ */
   getCategories: (_token?: string) => fetchWithAuth(`${BASE}/cms/categories/`),
 
+  /** GET /cms/categories/:id/ */
+  getCategory: (_token: string, id: string) =>
+    fetchWithAuth(`${BASE}/cms/categories/${id}/`),
+
   /** POST /cms/categories/ */
   createCategory: (_token: string, body: object) =>
     fetchWithAuth(`${BASE}/cms/categories/`, {
@@ -206,13 +221,48 @@ export const cmsApi = {
   deleteCategory: (_token: string, id: string) =>
     fetchWithAuth(`${BASE}/cms/categories/${id}/`, { method: "DELETE" }),
 
-  // --- Authors / Tags ---
+  // --- Authors CRUD ---
 
   /** GET /cms/authors/ */
   getAuthors: (_token?: string) => fetchWithAuth(`${BASE}/cms/authors/`),
 
+  /** POST /cms/authors/ */
+  createAuthor: (_token: string, body: object) =>
+    fetchWithAuth(`${BASE}/cms/authors/`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** GET /cms/authors/:id/ */
+  getAuthor: (_token: string, id: string) =>
+    fetchWithAuth(`${BASE}/cms/authors/${id}/`),
+
+  /** PATCH /cms/authors/:id/ */
+  updateAuthor: (_token: string, id: string, body: object) =>
+    fetchWithAuth(`${BASE}/cms/authors/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  /** DELETE /cms/authors/:id/ */
+  deleteAuthor: (_token: string, id: string) =>
+    fetchWithAuth(`${BASE}/cms/authors/${id}/`, { method: "DELETE" }),
+
+  // --- Tags CRUD ---
+
   /** GET /cms/tags/ */
   getTags: (_token?: string) => fetchWithAuth(`${BASE}/cms/tags/`),
+
+  /** POST /cms/tags/ */
+  createTag: (_token: string, body: object) =>
+    fetchWithAuth(`${BASE}/cms/tags/`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** DELETE /cms/tags/:id/ */
+  deleteTag: (_token: string, id: string) =>
+    fetchWithAuth(`${BASE}/cms/tags/${id}/`, { method: "DELETE" }),
 
   // --- Demo requests ---
 

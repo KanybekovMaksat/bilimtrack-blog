@@ -2,26 +2,89 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { EditorNav } from "@/widgets/editor-nav";
+import { cmsApi } from "@/shared/api/blog-api";
 
-const MOCK_AUTHORS = [
-  { id: "1", name: "Айгуль Нурманова", role: "Главный редактор", articles: 12, avatar: "АН", joined: "Янв 2025" },
-  { id: "2", name: "Данияр Сейткали", role: "Автор", articles: 7, avatar: "ДС", joined: "Мар 2025" },
-  { id: "3", name: "Камила Оразова", role: "Автор", articles: 5, avatar: "КО", joined: "Апр 2025" },
-  { id: "4", name: "Арман Бекова", role: "Редактор", articles: 3, avatar: "АБ", joined: "Май 2025" },
-];
+interface Author {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string;
+  articlesCount?: number;
+  createdAt?: string;
+  joined?: string;
+}
 
-const AVATAR_COLORS = ["#155dfc", "#00a63e", "#ad46ff", "#ea580c"];
+const AVATAR_COLORS = ["#155dfc", "#00a63e", "#ad46ff", "#ea580c", "#0891b2", "#be123c"];
+
+function getFullName(a: Author): string {
+  if (a.name) return a.name;
+  if (a.firstName || a.lastName) return `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim();
+  return "—";
+}
+
+function getInitials(a: Author): string {
+  const name = getFullName(a);
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function getJoined(a: Author): string {
+  const raw = a.createdAt ?? a.joined;
+  if (!raw) return "—";
+  try {
+    return new Date(raw).toLocaleDateString("ru-RU", { month: "short", year: "numeric" });
+  } catch {
+    return raw;
+  }
+}
 
 export default function WriterAuthorsPage() {
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
     else setIsAuth(true);
   }, [router]);
 
+  useEffect(() => {
+    if (!isAuth) return;
+    setLoading(true);
+    setError(null);
+    cmsApi.getAuthors()
+      .then((res) => {
+        const list: Author[] = res?.data ?? res ?? [];
+        setAuthors(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setError("Не удалось загрузить авторов"))
+      .finally(() => setLoading(false));
+  }, [isAuth]);
+
   if (!isAuth) return null;
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Удалить автора?")) return;
+    setDeletingId(id);
+    const token = localStorage.getItem("cms_token") ?? "";
+    try {
+      await cmsApi.deleteAuthor(token, id);
+      setAuthors((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      alert("Ошибка при удалении");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <>
@@ -39,39 +102,66 @@ export default function WriterAuthorsPage() {
               <h1 className="articles-title">Авторы</h1>
               <p className="articles-sub">Команда редакции блога</p>
             </div>
-            <button className="btn btn--primary">+ Пригласить автора</button>
           </div>
 
-          <div className="authors-grid">
-            {MOCK_AUTHORS.map((author, i) => (
-              <div key={author.id} className="author-card">
-                <div
-                  className="author-card__avatar"
-                  style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-                >
-                  {author.avatar}
+          {loading && (
+            <div className="art-empty" style={{ padding: "48px 0" }}>
+              <span style={{ opacity: 0.5 }}>Загрузка авторов...</span>
+            </div>
+          )}
+          {error && (
+            <div className="art-empty" style={{ color: "var(--danger, #dc2626)", padding: "48px 0" }}>
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && (
+            <>
+              {authors.length === 0 ? (
+                <div className="art-empty">Авторы не найдены</div>
+              ) : (
+                <div className="authors-grid">
+                  {authors.map((author, i) => (
+                    <div key={author.id} className="author-card">
+                      <div
+                        className="author-card__avatar"
+                        style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
+                      >
+                        {getInitials(author)}
+                      </div>
+                      <div className="author-card__info">
+                        <div className="author-card__name">{getFullName(author)}</div>
+                        <div className="author-card__role">
+                          {author.role ?? author.email ?? "Автор"}
+                        </div>
+                      </div>
+                      <div className="author-card__stats">
+                        <div className="author-stat">
+                          <span className="author-stat__num">
+                            {author.articlesCount ?? "—"}
+                          </span>
+                          <span className="author-stat__label">статей</span>
+                        </div>
+                        <div className="author-stat">
+                          <span className="author-stat__num">{getJoined(author)}</span>
+                          <span className="author-stat__label">с нами</span>
+                        </div>
+                      </div>
+                      <div className="author-card__actions">
+                        <button
+                          className="cat-action-btn cat-action-btn--danger"
+                          onClick={() => handleDelete(author.id)}
+                          disabled={deletingId === author.id}
+                        >
+                          {deletingId === author.id ? "..." : "Удалить"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="author-card__info">
-                  <div className="author-card__name">{author.name}</div>
-                  <div className="author-card__role">{author.role}</div>
-                </div>
-                <div className="author-card__stats">
-                  <div className="author-stat">
-                    <span className="author-stat__num">{author.articles}</span>
-                    <span className="author-stat__label">статей</span>
-                  </div>
-                  <div className="author-stat">
-                    <span className="author-stat__num">{author.joined}</span>
-                    <span className="author-stat__label">с нами</span>
-                  </div>
-                </div>
-                <div className="author-card__actions">
-                  <button className="cat-action-btn">Профиль</button>
-                  <button className="cat-action-btn">Статьи</button>
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </>
+          )}
         </main>
       </div>
     </>

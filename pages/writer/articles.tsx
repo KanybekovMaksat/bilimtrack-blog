@@ -5,19 +5,18 @@ import NextLink from "next/link";
 import { EditorNav } from "@/widgets/editor-nav";
 import { cmsApi } from "@/shared/api/blog-api";
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_ARTICLES = [
-  { id: "1", title: "Как внедрить цифровое расписание за 3 дня", status: "published", category: "Кейсы", views: 1842, date: "10 июн 2026" },
-  { id: "2", title: "Электронный журнал: плюсы и подводные камни", status: "published", category: "Советы", views: 976, date: "05 июн 2026" },
-  { id: "3", title: "Bilimtrack для колледжей — особенности внедрения", status: "draft", category: "Кейсы", views: 0, date: "02 июн 2026" },
-  { id: "4", title: "Как снизить бумажную нагрузку на учителей", status: "published", category: "Управление", views: 2341, date: "28 май 2026" },
-  { id: "5", title: "Аналитика успеваемости: практическое руководство", status: "published", category: "Советы", views: 1105, date: "20 май 2026" },
-  { id: "6", title: "Интеграция с государственными сервисами НОБД", status: "draft", category: "Новости", views: 0, date: "18 май 2026" },
-  { id: "7", title: "Мобильное приложение для родителей: онбординг", status: "published", category: "Советы", views: 654, date: "12 май 2026" },
-  { id: "8", title: "Gamification в школе: опыт 15 организаций", status: "published", category: "Кейсы", views: 3021, date: "05 май 2026" },
-  { id: "9", title: "Безопасность данных в образовательных платформах", status: "archived", category: "Новости", views: 430, date: "28 апр 2026" },
-  { id: "10", title: "API Bilimtrack: руководство разработчика", status: "published", category: "Кейсы", views: 892, date: "20 апр 2026" },
-];
+interface Article {
+  id: string;
+  titleRu?: string;
+  title?: string;
+  status: string;
+  category?: { nameRu?: string; name?: string; slug?: string } | string;
+  viewsCount?: number;
+  views?: number;
+  publishedAt?: string;
+  createdAt?: string;
+  created_at?: string;
+}
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   published: { label: "Опубликована", cls: "art-badge art-badge--published" },
@@ -25,30 +24,90 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   archived:  { label: "Архив",        cls: "art-badge art-badge--archived" },
 };
 
+function getTitle(a: Article): string {
+  return a.titleRu ?? a.title ?? "—";
+}
+
+function getCategory(a: Article): string {
+  if (!a.category) return "—";
+  if (typeof a.category === "string") return a.category;
+  return a.category.nameRu ?? a.category.name ?? a.category.slug ?? "—";
+}
+
+function getViews(a: Article): number {
+  return a.viewsCount ?? a.views ?? 0;
+}
+
+function getDate(a: Article): string {
+  const raw = a.publishedAt ?? a.createdAt ?? a.created_at;
+  if (!raw) return "—";
+  try {
+    return new Date(raw).toLocaleDateString("ru-RU", {
+      day: "numeric", month: "short", year: "numeric",
+    });
+  } catch {
+    return raw;
+  }
+}
+
 export default function WriterArticlesPage() {
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "published" | "draft" | "archived">("all");
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
-    else setIsAuth(true);
+    if (!localStorage.getItem("cms_token")) {
+      router.replace("/writer/login");
+    } else {
+      setIsAuth(true);
+    }
   }, [router]);
+
+  useEffect(() => {
+    if (!isAuth) return;
+    setLoading(true);
+    setError(null);
+    cmsApi.getArticles()
+      .then((res) => {
+        const list: Article[] = res?.data ?? res ?? [];
+        setArticles(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setError("Не удалось загрузить статьи"))
+      .finally(() => setLoading(false));
+  }, [isAuth]);
 
   if (!isAuth) return null;
 
-  const filtered = MOCK_ARTICLES.filter((a) => {
+  const filtered = articles.filter((a) => {
     const matchStatus = filter === "all" || a.status === filter;
-    const matchSearch = a.title.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = getTitle(a).toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
 
   const counts = {
-    all:       MOCK_ARTICLES.length,
-    published: MOCK_ARTICLES.filter((a) => a.status === "published").length,
-    draft:     MOCK_ARTICLES.filter((a) => a.status === "draft").length,
-    archived:  MOCK_ARTICLES.filter((a) => a.status === "archived").length,
+    all:       articles.length,
+    published: articles.filter((a) => a.status === "published").length,
+    draft:     articles.filter((a) => a.status === "draft").length,
+    archived:  articles.filter((a) => a.status === "archived").length,
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Удалить статью?")) return;
+    setDeletingId(id);
+    const token = localStorage.getItem("cms_token") ?? "";
+    try {
+      await cmsApi.deleteArticle(token, id);
+      setArticles((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      alert("Ошибка при удалении");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -95,46 +154,72 @@ export default function WriterArticlesPage() {
             />
           </div>
 
+          {/* States */}
+          {loading && (
+            <div className="art-empty" style={{ padding: "48px 0" }}>
+              <span style={{ opacity: 0.5 }}>Загрузка статей...</span>
+            </div>
+          )}
+          {error && (
+            <div className="art-empty" style={{ color: "var(--danger, #dc2626)", padding: "48px 0" }}>
+              {error}
+            </div>
+          )}
+
           {/* Table */}
-          <div className="art-table-wrap">
-            <table className="art-table">
-              <thead>
-                <tr>
-                  <th>Название</th>
-                  <th>Категория</th>
-                  <th>Статус</th>
-                  <th>Просмотры</th>
-                  <th>Дата</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((a) => (
-                  <tr key={a.id}>
-                    <td className="art-table__title">{a.title}</td>
-                    <td><span className="art-cat">{a.category}</span></td>
-                    <td>
-                      <span className={STATUS_LABELS[a.status].cls}>
-                        {STATUS_LABELS[a.status].label}
-                      </span>
-                    </td>
-                    <td className="art-table__num">
-                      {a.views > 0 ? a.views.toLocaleString("ru-RU") : "—"}
-                    </td>
-                    <td className="art-table__date">{a.date}</td>
-                    <td>
-                      <NextLink href="/writer/admin" className="art-edit-btn">
-                        Редактировать
-                      </NextLink>
-                    </td>
+          {!loading && !error && (
+            <div className="art-table-wrap">
+              <table className="art-table">
+                <thead>
+                  <tr>
+                    <th>Название</th>
+                    <th>Категория</th>
+                    <th>Статус</th>
+                    <th>Просмотры</th>
+                    <th>Дата</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="art-empty">Ничего не найдено</div>
-            )}
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map((a) => {
+                    const badge = STATUS_LABELS[a.status] ?? { label: a.status, cls: "art-badge" };
+                    return (
+                      <tr key={a.id}>
+                        <td className="art-table__title">{getTitle(a)}</td>
+                        <td><span className="art-cat">{getCategory(a)}</span></td>
+                        <td>
+                          <span className={badge.cls}>{badge.label}</span>
+                        </td>
+                        <td className="art-table__num">
+                          {getViews(a) > 0 ? getViews(a).toLocaleString("ru-RU") : "—"}
+                        </td>
+                        <td className="art-table__date">{getDate(a)}</td>
+                        <td style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                          <NextLink
+                            href={`/writer/admin?id=${a.id}`}
+                            className="art-edit-btn"
+                          >
+                            Редактировать
+                          </NextLink>
+                          <button
+                            className="art-edit-btn"
+                            style={{ color: "var(--danger, #dc2626)", borderColor: "var(--danger, #dc2626)" }}
+                            onClick={() => handleDelete(a.id)}
+                            disabled={deletingId === a.id}
+                          >
+                            {deletingId === a.id ? "..." : "Удалить"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {filtered.length === 0 && (
+                <div className="art-empty">Ничего не найдено</div>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </>
