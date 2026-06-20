@@ -13,6 +13,7 @@ const PAGE_SIZE = 6;
 
 /** Normalised article shape consumed by UI components */
 export interface MappedArticle {
+  id?: string | null;
   slug: string;
   cat: string;
   cover: string;
@@ -23,11 +24,12 @@ export interface MappedArticle {
   excerpt: string;
   featured: boolean;
   author?: { id?: string; name: string; avatarUrl?: string } | null;
-  relatedArticles?: MappedArticle[];
+  relatedArticles?: MappedArticle[] | null;
 }
 
-function mapApiItem(item: ArticleApiItem): MappedArticle {
+export function mapApiItem(item: ArticleApiItem): MappedArticle {
   return {
+    id: item.id ?? null,
     slug: item.slug,
     cat: item.category?.slug || "cases",
     cover: item.coverImageUrl || "journal",
@@ -39,12 +41,12 @@ function mapApiItem(item: ArticleApiItem): MappedArticle {
           year: "numeric",
         })
       : "",
-    iso: item.publishedAt,
+    iso: item.publishedAt || "",
     read: item.readingTime,
-    excerpt: item.excerpt,
-    featured: item.featured,
-    author: item.author,
-    relatedArticles: item.relatedArticles?.map(mapApiItem),
+    excerpt: item.excerpt || "",
+    featured: !!item.featured,
+    author: item.author ?? null,
+    relatedArticles: item.relatedArticles ? item.relatedArticles.map(mapApiItem) : null,
   };
 }
 
@@ -78,17 +80,33 @@ export interface ArticleFeed {
  * All filtering (category, search), pagination and featured-hero selection
  * are delegated to GET /blog/articles/ — no client-side .filter() or .slice().
  */
+export interface UseArticleFeedOptions {
+  initialHero?: MappedArticle | null;
+  initialArticles?: MappedArticle[];
+  initialTotalCount?: number;
+  initialNextUrl?: string | null;
+}
+
 export function useArticleFeed(
-  initialCategory: CategoryKey = "all"
+  initialCategory: CategoryKey = "all",
+  options?: UseArticleFeedOptions
 ): ArticleFeed {
   const [activeCat, setActiveCat] = useState<CategoryKey>(initialCategory);
   const [inputValue, setInputValue] = useState("");
   const [query, setQuery] = useState("");
 
-  const [articles, setArticles] = useState<MappedArticle[]>([]);
-  const [hero, setHero] = useState<MappedArticle | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const [nextUrl, setNextUrl] = useState<string | null>(null);
+  const [articles, setArticles] = useState<MappedArticle[]>(
+    options?.initialArticles ?? []
+  );
+  const [hero, setHero] = useState<MappedArticle | null>(
+    options?.initialHero ?? null
+  );
+  const [totalCount, setTotalCount] = useState(
+    options?.initialTotalCount ?? 0
+  );
+  const [nextUrl, setNextUrl] = useState<string | null>(
+    options?.initialNextUrl ?? null
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   // Ref to current page so loadMore can increment it without stale closures
@@ -99,6 +117,7 @@ export function useArticleFeed(
 
   // ─── Fetch hero once on mount (featured=true) ────────────────────────────
   useEffect(() => {
+    if (options?.initialHero !== undefined) return;
     blogApi
       .getArticles({ featured: true, pageSize: 1 })
       .then((res) => {
@@ -107,10 +126,14 @@ export function useArticleFeed(
         }
       })
       .catch((err) => console.error("Failed to fetch featured hero", err));
-  }, []);
+  }, [options?.initialHero]);
 
   // ─── Fetch feed whenever category or search term changes ─────────────────
   useEffect(() => {
+    if (activeCat === "all" && !query && options?.initialArticles) {
+      return;
+    }
+
     pageRef.current = 1;
     setIsLoading(true);
     setArticles([]);
@@ -133,7 +156,7 @@ export function useArticleFeed(
       })
       .catch((err) => console.error("Failed to fetch articles", err))
       .finally(() => setIsLoading(false));
-  }, [activeCat, query]);
+  }, [activeCat, query, options?.initialArticles]);
 
   // ─── Load next page ───────────────────────────────────────────────────────
   const loadMore = useCallback(() => {

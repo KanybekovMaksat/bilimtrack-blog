@@ -3,6 +3,23 @@
    Desktop CMS, modelled on the Mentor console (white left rail).
    ============================================================ */
 
+html:has(.admin-body),
+body:has(.admin-body) {
+  height: 100vh !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.admin-nav,
+.editor-col,
+.settings-rail {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+
 .admin-body {
   height: 100vh; overflow: hidden;
   display: grid; grid-template-columns: 248px 1fr 336px;
@@ -522,4 +539,96 @@
   animation: spin .7s linear infinite; flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Image Cropper Modal styling */
+.crop-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.crop-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.crop-card h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.crop-view-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  background: #171717;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+}
+
+.crop-view-container:active {
+  cursor: grabbing;
+}
+
+.crop-mask {
+  position: absolute;
+  border: 2px solid var(--blue-600);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  border-radius: 8px;
+  z-index: 5;
+}
+
+.crop-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crop-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.crop-control-row label {
+  width: 120px;
+  color: var(--text-muted);
+}
+
+.crop-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 9999px;
+  accent-color: var(--blue-600);
+}
+
+.crop-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
 

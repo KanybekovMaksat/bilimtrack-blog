@@ -7,7 +7,7 @@
  * Token is read from localStorage("cms_token") automatically by fetchWithAuth.
  */
 
-const BASE = "https://api.bilimtrack.com/api/v1";
+const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.bilimtrack.com/api/v1";
 
 // ---------------------------------------------------------------------------
 // Core fetch helper — reads token from localStorage, handles 401 + refresh
@@ -18,11 +18,16 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<an
 
   const token = localStorage.getItem("cms_token");
 
-  const buildHeaders = (t: string | null): Record<string, string> => ({
-    "Content-Type": "application/json",
-    ...(t ? { Authorization: `Bearer ${t}` } : {}),
-    ...((options.headers as Record<string, string> | undefined) ?? {}),
-  });
+  const buildHeaders = (t: string | null): Record<string, string> => {
+    const headers: Record<string, string> = {
+      ...(t ? { Authorization: `Bearer ${t}` } : {}),
+      ...((options.headers as Record<string, string> | undefined) ?? {}),
+    };
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
+    return headers;
+  };
 
   try {
     let res = await fetch(url, { ...options, headers: buildHeaders(token) });
@@ -91,6 +96,7 @@ export interface ArticleListResponse {
 
 /** Article object as returned by the public API */
 export interface ArticleApiItem {
+  id: string;
   slug: string;
   title: string;
   excerpt: string;
@@ -265,15 +271,20 @@ export const cmsApi = {
    * 🚧 MOCK — имитирует задержку сети и возвращает локальный Object URL.
    *    Object URL живёт только в текущей вкладке браузера (не сохраняется).
    */
-  uploadCoverImage: async (_token: string, file: File): Promise<{ url: string } | null> => {
-    if (typeof window === "undefined") return null;
-
-    // Simulate ~1 second network round-trip
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Create a temporary browser-local URL for the file — works without a server
-    const url = URL.createObjectURL(file);
-    return { url };
+  uploadCoverImage: async (token: string, file: File): Promise<{ url: string } | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetchWithAuth(`${BASE}/cms/media/`, {
+      method: "POST",
+      body: formData,
+    });
+    if (res?.data?.url) {
+      return { url: res.data.url };
+    }
+    if (res?.url) {
+      return { url: res.url };
+    }
+    return null;
   },
 
 

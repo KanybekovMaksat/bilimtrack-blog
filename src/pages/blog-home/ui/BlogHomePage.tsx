@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 
 import { ArticleCard, HeroPost } from "@/entities/article";
 import { CAT_LABEL, type CategoryKey } from "@/entities/category";
-import { CategoryFilter, useArticleFeed } from "@/features/filter-articles";
+import { CategoryFilter, useArticleFeed, type MappedArticle } from "@/features/filter-articles";
 import { SiteHeader } from "@/widgets/site-header";
 import { SiteFooter } from "@/widgets/site-footer";
 import { BlogHero } from "@/widgets/blog-hero";
@@ -15,10 +15,27 @@ import { pluralArticles } from "@/shared/lib";
 const isCategoryKey = (v: unknown): v is CategoryKey =>
   typeof v === "string" && v in CAT_LABEL;
 
+interface BlogHomePageProps {
+  initialHero: MappedArticle | null;
+  initialArticles: MappedArticle[];
+  initialTotalCount: number;
+  initialNextUrl: string | null;
+}
+
 /** /blog — knowledge-hub home: hero, live filter + search, feed, sidebar. */
-export function BlogHomePage() {
+export function BlogHomePage({
+  initialHero,
+  initialArticles,
+  initialTotalCount,
+  initialNextUrl,
+}: BlogHomePageProps) {
   const router = useRouter();
-  const feed = useArticleFeed("all");
+  const feed = useArticleFeed("all", {
+    initialHero,
+    initialArticles,
+    initialTotalCount,
+    initialNextUrl,
+  });
 
   // Sync ?cat=… (e.g. from sidebar category links) into the feed.
   const catParam = router.query.cat;

@@ -37,16 +37,15 @@ function extractTocSections(html: string): TocSection[] {
 
 interface ArticlePageProps {
   article: Article;
+  popular: Article[];
 }
 
 /** /blog/[slug] — article reader with TOC, share, lead funnel and CTA. */
-export function ArticlePage({ article }: ArticlePageProps) {
+export function ArticlePage({ article, popular }: ArticlePageProps) {
   const articleRef = useRef<HTMLElement>(null);
 
   // relatedArticles comes from the API response; render section only if present
   const related: Article[] = (article.relatedArticles ?? []) as unknown as Article[];
-  // Popular list is also derived from API data passed via props (populated in getServerSideProps/getStaticProps)
-  const popular: Article[] = [];
 
   // Build TOC from actual article content; fall back to empty array
   const tocSections = useMemo(
@@ -123,7 +122,7 @@ export function ArticlePage({ article }: ArticlePageProps) {
 
             <ArticleTocMobile sections={tocSections} />
 
-            <ArticleBody slug={article.slug} content={article.content} />
+            <ArticleBody slug={article.slug} content={article.content} articleId={article.id} />
 
             <FinalCta />
 

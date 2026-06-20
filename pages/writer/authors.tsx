@@ -46,19 +46,12 @@ function getJoined(a: Author): string {
 
 export default function WriterAuthorsPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
   const [authors, setAuthors] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
-    else setIsAuth(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!isAuth) return;
     setLoading(true);
     setError(null);
     cmsApi.getAuthors()
@@ -68,9 +61,7 @@ export default function WriterAuthorsPage() {
       })
       .catch(() => setError("Не удалось загрузить авторов"))
       .finally(() => setLoading(false));
-  }, [isAuth]);
-
-  if (!isAuth) return null;
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Удалить автора?")) return;

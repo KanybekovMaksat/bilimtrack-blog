@@ -6,6 +6,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  i18n: {
+    locales: ["ru", "ky", "en"],
+    defaultLocale: "ru",
+    localeDetection: false,
+  },
   // Pin the workspace root (a parent package-lock.json exists upstream).
   turbopack: {
     root: __dirname,

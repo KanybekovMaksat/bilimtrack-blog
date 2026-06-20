@@ -1,48 +1,15 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
-import { cmsApi } from "@/shared/api/blog-api";
 
 /**
- * The site front door.
- *
- * On load:
- *  1. If refresh token exists → try POST /auth/refresh/
- *     - Success  → save new access token, redirect to /blog
- *     - Failure  → clear tokens, redirect to /writer/login
- *  2. No tokens at all → redirect to /writer/login
+ * Client-side redirect from / to /blog.
+ * Prevents Next.js prerendering redirect errors with multi-locale routing.
  */
 export default function HomeRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    const refresh = localStorage.getItem("cms_refresh_token");
-
-    if (!refresh) {
-      // No session at all → go to login
-      router.replace("/writer/login");
-      return;
-    }
-
-    // Try to exchange refresh token for a new access token
-    cmsApi
-      .refreshToken(refresh)
-      .then((data) => {
-        const newAccess = data?.data?.access ?? data?.access ?? null;
-        if (newAccess) {
-          localStorage.setItem("cms_token", newAccess);
-          router.replace("/blog");
-        } else {
-          // Refresh token is expired / invalid
-          localStorage.removeItem("cms_token");
-          localStorage.removeItem("cms_refresh_token");
-          router.replace("/writer/login");
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem("cms_token");
-        localStorage.removeItem("cms_refresh_token");
-        router.replace("/writer/login");
-      });
+    router.replace("/blog");
   }, [router]);
 
   return (
@@ -57,24 +24,15 @@ export default function HomeRedirect() {
     >
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "16px",
+          width: "40px",
+          height: "40px",
+          borderRadius: "50%",
+          border: "3px solid var(--stroke-primary, #e5e5e5)",
+          borderTopColor: "var(--btn-primary-default, #155dfc)",
+          animation: "spin 0.7s linear infinite",
         }}
-      >
-        <div
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "50%",
-            border: "3px solid var(--stroke-primary, #e5e5e5)",
-            borderTopColor: "var(--btn-primary-default, #155dfc)",
-            animation: "spin 0.7s linear infinite",
-          }}
-        />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
+      />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -23,16 +23,8 @@ const BG_COLORS = [
 
 export default function WriterMediaPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
   const [dragging, setDragging] = useState(false);
-
-  useEffect(() => {
-    if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
-    else setIsAuth(true);
-  }, [router]);
-
-  if (!isAuth) return null;
 
   return (
     <>

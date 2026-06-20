@@ -32,7 +32,6 @@ function getCatCount(c: Category): number {
 
 export default function WriterCategoriesPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,14 +44,8 @@ export default function WriterCategoriesPage() {
   const [editName, setEditName] = useState("");
 
   useEffect(() => {
-    if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
-    else setIsAuth(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!isAuth) return;
     loadCategories();
-  }, [isAuth]);
+  }, []);
 
   function loadCategories() {
     setLoading(true);
@@ -128,7 +121,6 @@ export default function WriterCategoriesPage() {
     }
   };
 
-  if (!isAuth) return null;
 
   return (
     <>

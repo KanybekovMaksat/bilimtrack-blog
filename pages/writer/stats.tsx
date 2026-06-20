@@ -23,7 +23,6 @@ function getViews(a: ArticleRow): number {
 
 export default function WriterStatsPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
 
   const [articles, setArticles] = useState<ArticleRow[]>([]);
@@ -31,12 +30,6 @@ export default function WriterStatsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!localStorage.getItem("cms_token")) router.replace("/writer/login");
-    else setIsAuth(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!isAuth) return;
     setLoading(true);
 
     Promise.allSettled([
@@ -52,9 +45,7 @@ export default function WriterStatsPage() {
         setPopular(Array.isArray(list) ? list : []);
       }
     }).finally(() => setLoading(false));
-  }, [isAuth]);
-
-  if (!isAuth) return null;
+  }, []);
 
   const published = articles.filter((a) => (a as any).status === "published");
   const drafts = articles.filter((a) => (a as any).status === "draft");

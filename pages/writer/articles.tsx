@@ -9,6 +9,7 @@ interface Article {
   id: string;
   titleRu?: string;
   title?: string;
+  slug?: string;
   status: string;
   category?: { nameRu?: string; name?: string; slug?: string } | string;
   viewsCount?: number;
@@ -52,7 +53,6 @@ function getDate(a: Article): string {
 
 export default function WriterArticlesPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,15 +61,6 @@ export default function WriterArticlesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("cms_token")) {
-      router.replace("/writer/login");
-    } else {
-      setIsAuth(true);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    if (!isAuth) return;
     setLoading(true);
     setError(null);
     cmsApi.getArticles()
@@ -79,9 +70,7 @@ export default function WriterArticlesPage() {
       })
       .catch(() => setError("Не удалось загрузить статьи"))
       .finally(() => setLoading(false));
-  }, [isAuth]);
-
-  if (!isAuth) return null;
+  }, []);
 
   const filtered = articles.filter((a) => {
     const matchStatus = filter === "all" || a.status === filter;

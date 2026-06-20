@@ -13,8 +13,11 @@ export function ArticleCover({ cat, cover, className }: ArticleCoverProps) {
   // Дефолтная обложка, если она почему-то не задана
   const safeCover = cover || "journal";
 
-  // Поддерживаем реальные URL (http) и локальные mock-ссылки (blob)
-  if (safeCover.startsWith("http") || safeCover.startsWith("blob:") || safeCover.startsWith("/")) {
+  const presets = ["journal", "schedule", "rating", "chat", "stats", "news", "brand"];
+  const isPreset = presets.includes(safeCover);
+
+  // Поддерживаем все реальные URL (включая относительные пути и blob-ссылки)
+  if (!isPreset) {
     return (
       <div className={className} style={{ display: "contents" }}>
         <div className={`cover cover--${cat}`} style={{ overflow: 'hidden' }}>

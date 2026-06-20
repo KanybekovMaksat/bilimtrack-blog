@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import { useCreateBlockNote } from "@blocknote/react";
 
 import { type CoverScene } from "@/entities/article";
 import type { ArticleCategory } from "@/entities/category";
@@ -8,15 +9,7 @@ import { cmsApi } from "@/shared/api/blog-api";
 
 export type EditorStatus = "draft" | "published";
 
-export const COVER_SCENES: CoverScene[] = [
-  "journal",
-  "schedule",
-  "rating",
-  "chat",
-  "stats",
-  "news",
-  "brand",
-];
+export const COVER_SCENES: CoverScene[] = [];
 
 const DRAFT_KEY = "bt_draft";
 const PREVIEW_SLUG = "muit-cifrovoe-upravlenie";
@@ -26,7 +19,7 @@ interface Snapshot {
   title: string;
   excerpt: string;
   bodyHtml: string;
-  cat: ArticleCategory;
+  cat: ArticleCategory | "";
   cover: CoverScene | null;
   /** Real URL of the uploaded cover image — takes priority over CSS preset */
   coverImageUrl: string | null;
@@ -36,6 +29,7 @@ interface Snapshot {
   seoTitle: string;
   seoDesc: string;
   selectedAuthorId: string | null;
+  coverAspect?: string;
 }
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -53,7 +47,7 @@ function resolveCategoryUuid(
 ): string | null {
   if (categoriesList.length === 0) return null;
   const match = categoriesList.find((c) => c.slug === catKey);
-  return (match ?? categoriesList[0]).id;
+  return match?.id ?? null;
 }
 
 /**
@@ -142,7 +136,6 @@ export function useArticleEditor() {
   const router = useRouter();
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const excerptRef = useRef<HTMLTextAreaElement>(null);
-  const getEditorHTMLRef = useRef<() => Promise<string>>(async () => "");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(false);
@@ -150,7 +143,7 @@ export function useArticleEditor() {
   const [articleId, setArticleId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
-  const [cat, setCat] = useState<ArticleCategory>("cases");
+  const [cat, setCat] = useState<ArticleCategory | "">("");
   const [cover, setCover] = useState<CoverScene | null>(null);
   /** Real URL returned by the media upload endpoint — takes priority over CSS preset */
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
@@ -164,6 +157,18 @@ export function useArticleEditor() {
   const [seoDesc, setSeoDesc] = useState("");
   const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
 
+  const [coverAspect, setCoverAspect] = useState<string>("16-9");
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const clearError = useCallback((field: string) => {
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
   const [categoriesList, setCategoriesList] = useState<
     { id: string; name: string; slug: string }[]
   >([]);
@@ -173,6 +178,9 @@ export function useArticleEditor() {
   const [dirty, setDirty] = useState(false);
   const [initialHtml, setInitialHtml] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
+
+  const blockNote = useCreateBlockNote();
+  const [editorInitialized, setEditorInitialized] = useState(false);
 
   const [toast, setToast] = useState<{
     show: boolean;
@@ -184,6 +192,19 @@ export function useArticleEditor() {
   const wordLabel = `${words} ${pluralWords(words)}`;
   const seoTitleLen = (seoTitle || title).length;
   const seoDescLen = (seoDesc || excerpt).length;
+
+  useEffect(() => {
+    async function initEditor() {
+      if (initialHtml && !editorInitialized) {
+        const blocks = await blockNote.tryParseHTMLToBlocks(initialHtml);
+        blockNote.replaceBlocks(blockNote.document, blocks);
+        setEditorInitialized(true);
+      } else if (!initialHtml && isReady && !editorInitialized) {
+        setEditorInitialized(true);
+      }
+    }
+    initEditor();
+  }, [blockNote, initialHtml, isReady, editorInitialized]);
 
   // Auto-resize textareas
   useEffect(() => {
@@ -216,8 +237,12 @@ export function useArticleEditor() {
     );
   }, []);
 
+  const getEditorHTML = useCallback(async () => {
+    return blockNote.blocksToFullHTML(blockNote.document);
+  }, [blockNote]);
+
   const snapshot = async (): Promise<Snapshot> => {
-    const bodyHtml = await getEditorHTMLRef.current();
+    const bodyHtml = await getEditorHTML();
     return {
       id: articleId,
       title,
@@ -232,6 +257,7 @@ export function useArticleEditor() {
       seoTitle,
       seoDesc,
       selectedAuthorId,
+      coverAspect,
     };
   };
 
@@ -247,14 +273,17 @@ export function useArticleEditor() {
     const token = localStorage.getItem("cms_token");
     if (!token) return; // Not logged in — localStorage-only save is fine
 
+    // If category is not selected, skip API save silently
+    if (!data.cat) return;
+
     const categoryUuid = resolveCategoryUuid(categoriesList, data.cat);
     if (!categoryUuid) {
       // Categories not loaded yet — skip API save silently, will retry on next change
       return;
     }
 
-    // Author: prefer explicitly selected, fall back to first in list
-    const authorUuid = data.selectedAuthorId ?? authorsList[0]?.id ?? null;
+    // Author: prefer explicitly selected, do NOT fall back to first in list
+    const authorUuid = data.selectedAuthorId ?? null;
     const payload = buildArticlePayload(data, categoryUuid, authorUuid);
 
     console.log("=== CMS SEND DATA ===", payload);
@@ -315,10 +344,10 @@ export function useArticleEditor() {
 
   const onBodyChange = useCallback(async () => {
     markDirty();
-    const html = await getEditorHTMLRef.current();
+    const html = await getEditorHTML();
     const text = html.replace(/<[^>]*>?/gm, " ");
     setWords(countWords(`${title} ${excerpt} ${text}`));
-  }, [title, excerpt, markDirty]);
+  }, [title, excerpt, markDirty, getEditorHTML]);
 
   const pickCover = useCallback((scene: CoverScene) => {
     // Selecting a CSS-preset clears any uploaded image URL
@@ -326,8 +355,13 @@ export function useArticleEditor() {
     setCover((cur) => (cur === scene ? null : scene));
   }, []);
 
+  const removeCover = useCallback(() => {
+    setCoverImageUrl(null);
+    setCover(null);
+  }, []);
+
   const ensureCover = useCallback(() => {
-    setCover((cur) => cur ?? "journal");
+    setCover(null);
   }, []);
 
   const editSlug = useCallback((value: string) => {
@@ -370,14 +404,65 @@ export function useArticleEditor() {
     showToast("Черновик сохранён", "check");
   }, [save, showToast]);
 
+  const handleBackendErrors = useCallback((res: any) => {
+    if (!res) return;
+    const newErrors: Record<string, string> = {};
+
+    Object.entries(res).forEach(([key, val]) => {
+      if (Array.isArray(val)) {
+        let mappedKey = key;
+        if (key === "titleRu") mappedKey = "title";
+        if (key === "excerptRu") mappedKey = "excerpt";
+        if (key === "contentRu") mappedKey = "content";
+        if (key === "author") mappedKey = "author";
+        if (key === "category") mappedKey = "category";
+        newErrors[mappedKey] = val.join(", ");
+      } else if (typeof val === "string") {
+        newErrors[key] = val;
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...newErrors }));
+      showToast("Ошибка валидации на сервере", "bolt");
+    } else {
+      showToast("Ошибка: " + parseDjangoError(res), "bolt");
+    }
+  }, [showToast]);
+
   // ---------------------------------------------------------------------------
   // publish()
   // ---------------------------------------------------------------------------
   const publish = useCallback(async () => {
     if (isPublishing) return;
+    
+    // Clear errors
+    setErrors({});
+
+    let hasLocalErrors = false;
+    const localErrors: Record<string, string> = {};
+
     if (!title.trim()) {
-      titleRef.current?.focus();
-      showToast("Добавьте заголовок статьи", "bolt");
+      localErrors.title = "Заголовок обязателен для заполнения";
+      hasLocalErrors = true;
+    }
+
+    if (!cat) {
+      localErrors.category = "Выберите категорию";
+      hasLocalErrors = true;
+    }
+
+    if (!selectedAuthorId) {
+      localErrors.author = "Выберите автора";
+      hasLocalErrors = true;
+    }
+
+    if (hasLocalErrors) {
+      setErrors(localErrors);
+      showToast("Заполните обязательные поля", "bolt");
+      if (localErrors.title) {
+        titleRef.current?.focus();
+      }
       return;
     }
 
@@ -397,12 +482,12 @@ export function useArticleEditor() {
 
         const categoryUuid = resolveCategoryUuid(categoriesList, data.cat);
         if (!categoryUuid) {
-          showToast("Категории загружаются, подождите секунду и повторите", "bolt");
+          showToast("Категория не найдена", "bolt");
           setIsPublishing(false);
           return;
         }
 
-        const authorUuid = data.selectedAuthorId ?? authorsList[0]?.id ?? null;
+        const authorUuid = data.selectedAuthorId ?? null;
         const payload = buildArticlePayload(
           { ...data, status: "draft" },
           categoryUuid,
@@ -420,7 +505,11 @@ export function useArticleEditor() {
             JSON.stringify({ ...data, id: currentId })
           );
         } else {
-          showToast("Ошибка создания: " + parseDjangoError(res?.data ?? res), "bolt");
+          if (res) {
+            handleBackendErrors(res);
+          } else {
+            showToast("Ошибка создания статьи", "bolt");
+          }
           console.error("=== CMS CREATE ERROR ===", res);
           setIsPublishing(false);
           return;
@@ -439,7 +528,11 @@ export function useArticleEditor() {
           if (errStr.toLowerCase().includes("опубликована")) {
              console.log("Article was already published by backend.");
           } else {
-            showToast("Ошибка публикации: " + errStr, "bolt");
+            if (res) {
+              handleBackendErrors(res);
+            } else {
+              showToast("Ошибка публикации: " + errStr, "bolt");
+            }
             setIsPublishing(false);
             return;
           }
@@ -566,11 +659,11 @@ export function useArticleEditor() {
         setExcerpt(item.excerptRu ?? item.excerpt ?? "");
 
         // Map category slug → ArticleCategory key
-        const catSlug: string = item.category?.slug ?? "cases";
-        setCat(catSlug as ArticleCategory);
+        const catSlug: string = item.category?.slug ?? "";
+        setCat(catSlug as ArticleCategory | "");
 
-        // Cover: if a real URL is stored, prefer it; otherwise derive preset from the URL
-        if (item.coverImageUrl && item.coverImageUrl.startsWith("http")) {
+        // Cover: if a real URL is stored, set it directly
+        if (item.coverImageUrl) {
           setCoverImageUrl(item.coverImageUrl);
           setCover(null);
         }
@@ -616,16 +709,14 @@ export function useArticleEditor() {
     if (editId) return;
 
     const seedExample = () => {
-      setCat("cases");
-      setCover("journal");
-      setTitle("Как МУИТ перешёл на цифровое управление учебным процессом");
-      setExcerpt(
-        "Рассказываем, как международный университет автоматизировал расписание, журнал и оплату — и за один семестр избавился от бумажной рутины."
-      );
-      setInitialHtml(
-        `<p>Когда набор вырос до полутора тысяч студентов, привычные таблицы перестали справляться.</p>`
-      );
+      setCat("");
+      setCover(null);
+      setCoverImageUrl(null);
+      setTitle("");
+      setExcerpt("");
+      setInitialHtml("");
       setPubDate(todayISO());
+      setCoverAspect("16-9");
     };
 
     const raw =
@@ -646,7 +737,7 @@ export function useArticleEditor() {
         setArticleId(d.id || null);
         setTitle(d.title || "");
         setExcerpt(d.excerpt || "");
-        setCat(d.cat || "cases");
+        setCat(d.cat || "");
         setCover(d.cover ?? null);
         setCoverImageUrl(d.coverImageUrl ?? null);
         setStatus(d.status || "draft");
@@ -657,6 +748,7 @@ export function useArticleEditor() {
         setSeoDesc(d.seoDesc || "");
         setInitialHtml(d.bodyHtml || "");
         setSelectedAuthorId(d.selectedAuthorId ?? null);
+        setCoverAspect(d.coverAspect || "16-9");
       } catch {
         seedExample();
       }
@@ -674,7 +766,7 @@ export function useArticleEditor() {
   }, [router.isReady, router.query.id]);
 
   return {
-    refs: { titleRef, excerptRef, getEditorHTMLRef },
+    refs: { titleRef, excerptRef },
     articleId,
     title,
     excerpt,
@@ -700,6 +792,12 @@ export function useArticleEditor() {
     scenes: COVER_SCENES,
     initialHtml,
     isReady,
+    blockNote,
+    editorInitialized,
+    errors,
+    clearError,
+    coverAspect,
+    setCoverAspect,
     categoriesList,
     authorsList,
     setTitle,
@@ -713,6 +811,7 @@ export function useArticleEditor() {
     editSlug,
     onBodyChange,
     pickCover,
+    removeCover,
     ensureCover,
     uploadCover,
     saveDraft,

@@ -34,16 +34,12 @@ function getInitials(u: UserMe | null): string {
 
 export default function WriterSettingsPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
   const [user, setUser] = useState<UserMe | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("cms_token");
-    if (!token) {
-      router.replace("/writer/login");
-    } else {
-      setIsAuth(true);
+    if (token) {
       // Load current user data
       cmsApi.getUserMe(token)
         .then((res) => {
@@ -54,9 +50,7 @@ export default function WriterSettingsPage() {
         })
         .catch((err) => console.error("Failed to load user:", err));
     }
-  }, [router]);
-
-  if (!isAuth) return null;
+  }, []);
 
   const handleSave = () => {
     setSaved(true);

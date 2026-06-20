@@ -28,14 +28,18 @@ export const getStaticPaths: GetStaticPaths = async () => {
 // getStaticProps — fetch full article from API, fall back to mock data
 // ---------------------------------------------------------------------------
 export const getStaticProps: GetStaticProps<
-  { article: Article },
+  { article: Article; popular: Article[] },
   { slug: string }
-> = async ({ params }) => {
-  const slug = params?.slug;
+> = async (context) => {
+  const slug = context.params?.slug;
+  const lang = context.locale || "ru";
   if (!slug) return { notFound: true };
 
   try {
-    const res = await blogApi.getArticle(slug);
+    const [res, popularRes] = await Promise.all([
+      blogApi.getArticle(slug, lang),
+      blogApi.getPopular(lang),
+    ]);
 
     // Unwrap { data: {...} }
     const item: any = res?.data ?? null;
@@ -47,6 +51,7 @@ export const getStaticProps: GetStaticProps<
     // Map related articles — readingTime comes from API, no fallback needed
     const relatedArticles: Article[] = (item.relatedArticles ?? []).map(
       (r: any) => ({
+        id: r.id,
         slug: r.slug,
         cat: r.category?.slug || "cases",
         cover: r.coverImageUrl || "journal",
@@ -66,6 +71,7 @@ export const getStaticProps: GetStaticProps<
     );
 
     const article: Article = {
+      id: item.id,
       slug: item.slug,
       cat: item.category?.slug || "cases",
       cover: item.coverImageUrl || "journal",
@@ -87,8 +93,29 @@ export const getStaticProps: GetStaticProps<
       author: item.author ?? null,
     };
 
+    const popular: Article[] = (popularRes?.data ?? []).map(
+      (r: any) => ({
+        id: r.id,
+        slug: r.slug,
+        cat: r.category?.slug || "cases",
+        cover: r.coverImageUrl || "journal",
+        title: r.title,
+        date: r.publishedAt
+          ? new Date(r.publishedAt).toLocaleDateString("ru-RU", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : "",
+        iso: r.publishedAt ?? "",
+        read: r.readingTime,
+        excerpt: r.excerpt ?? "",
+        author: r.author ?? null,
+      })
+    );
+
     return {
-      props: { article },
+      props: { article, popular },
       revalidate: 60,
     };
   } catch (error) {
@@ -103,6 +130,6 @@ export const getStaticProps: GetStaticProps<
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
-export default function ArticleRoute({ article }: { article: Article }) {
-  return <ArticlePage article={article} />;
+export default function ArticleRoute({ article, popular }: { article: Article; popular: Article[] }) {
+  return <ArticlePage article={article} popular={popular} />;
 }

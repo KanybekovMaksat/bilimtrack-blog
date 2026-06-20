@@ -11,6 +11,7 @@ export type CoverScene =
   | "brand";
 
 export interface Article {
+  id?: string;
   slug: string;
   cat: ArticleCategory;
   cover: CoverScene;

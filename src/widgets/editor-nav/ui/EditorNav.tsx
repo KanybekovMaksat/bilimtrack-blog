@@ -1,13 +1,11 @@
+import { useEffect, useState } from "react";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { Avatar } from "@heroui/react";
 
-import { ARTICLES } from "@/entities/article";
-import { CATEGORIES } from "@/entities/category";
+import { cmsApi } from "@/shared/api/blog-api";
 import { Icon } from "@/shared/ui";
 import { siteConfig } from "@/shared/config";
-
-const realCategories = CATEGORIES.filter((c) => c.key !== "all").length;
 
 interface NavItemProps {
   href: string;
@@ -38,6 +36,29 @@ export function EditorNav() {
   const router = useRouter();
   const activeHref = router.pathname;
 
+  const [articlesCount, setArticlesCount] = useState<number | undefined>(undefined);
+  const [categoriesCount, setCategoriesCount] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    cmsApi.getArticles()
+      .then((res) => {
+        const list = res?.data ?? res;
+        if (Array.isArray(list)) {
+          setArticlesCount(list.length);
+        }
+      })
+      .catch((err) => console.warn("Failed to load articles count for sidebar:", err));
+
+    cmsApi.getCategories()
+      .then((res) => {
+        const list = res?.data ?? res;
+        if (Array.isArray(list)) {
+          setCategoriesCount(list.length);
+        }
+      })
+      .catch((err) => console.warn("Failed to load categories count for sidebar:", err));
+  }, []);
+
   return (
     <nav className="admin-nav">
       <NextLink className="brand" href="/blog">
@@ -54,9 +75,9 @@ export function EditorNav() {
       </NextLink>
 
       <div className="nav-section">Контент</div>
-      <NavItem href="/writer/articles" icon="file-text" label="Статьи" badge={ARTICLES.length} activeHref={activeHref} />
+      <NavItem href="/writer/articles" icon="file-text" label="Статьи" badge={articlesCount} activeHref={activeHref} />
       <NavItem href="/writer/admin"    icon="pencil"    label="Новая статья" activeHref={activeHref} />
-      <NavItem href="/writer/categories" icon="tag"    label="Категории" badge={realCategories} activeHref={activeHref} />
+      <NavItem href="/writer/categories" icon="tag"    label="Категории" badge={categoriesCount} activeHref={activeHref} />
       <NavItem href="/writer/media"    icon="photo"     label="Медиа" activeHref={activeHref} />
 
       <div className="nav-section">Аналитика</div>

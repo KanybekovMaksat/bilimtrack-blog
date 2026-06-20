@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import { ArticleCover } from "@/entities/article";
 import type { ArticleCategory } from "@/entities/category";
 import { Button, Icon } from "@/shared/ui";
 import { cn } from "@/shared/lib";
@@ -80,15 +79,28 @@ export function EditorSettingsRail({ editor }: Props) {
         </p>
         <select
           className="field-select"
+          style={{
+            borderColor: editor.errors.category ? "red" : undefined,
+            boxShadow: editor.errors.category ? "0 0 0 1.5px red" : undefined
+          }}
           value={editor.cat}
-          onChange={(e) => editor.setCat(e.target.value as ArticleCategory)}
+          onChange={(e) => {
+            editor.setCat(e.target.value as ArticleCategory);
+            editor.clearError("category");
+          }}
         >
+          <option value="">— выбрать категорию —</option>
           {catOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
         </select>
+        {editor.errors.category && (
+          <p style={{ color: "red", fontSize: "12px", marginTop: "4px", fontWeight: 500 }}>
+            {editor.errors.category}
+          </p>
+        )}
       </div>
 
       {/* ── Author ─────────────────────────────────────────────────────────── */}
@@ -100,10 +112,15 @@ export function EditorSettingsRail({ editor }: Props) {
           </p>
           <select
             className="field-select"
+            style={{
+              borderColor: editor.errors.author ? "red" : undefined,
+              boxShadow: editor.errors.author ? "0 0 0 1.5px red" : undefined
+            }}
             value={editor.selectedAuthorId ?? ""}
-            onChange={(e) =>
-              editor.setSelectedAuthorId(e.target.value || null)
-            }
+            onChange={(e) => {
+              editor.setSelectedAuthorId(e.target.value || null);
+              editor.clearError("author");
+            }}
           >
             <option value="">— выбрать автора —</option>
             {editor.authorsList.map((a) => (
@@ -112,6 +129,11 @@ export function EditorSettingsRail({ editor }: Props) {
               </option>
             ))}
           </select>
+          {editor.errors.author && (
+            <p style={{ color: "red", fontSize: "12px", marginTop: "4px", fontWeight: 500 }}>
+              {editor.errors.author}
+            </p>
+          )}
         </div>
       )}
 
@@ -171,9 +193,26 @@ export function EditorSettingsRail({ editor }: Props) {
           Обложка
         </p>
 
+        {/* Cover Aspect Ratio Selection */}
+        <div style={{ marginBottom: "16px" }}>
+          <label style={{ display: "block", fontSize: "12px", color: "var(--text-subtle)", fontWeight: 600, marginBottom: "6px" }}>
+            Пропорции обложки
+          </label>
+          <select
+            className="field-select"
+            value={editor.coverAspect}
+            onChange={(e) => editor.setCoverAspect(e.target.value)}
+          >
+            <option value="16-9">16:9 (Стандарт)</option>
+            <option value="21-9">21:9 (Широкий)</option>
+            <option value="3-2">3:2 (Фото)</option>
+            <option value="1-1">1:1 (Квадрат)</option>
+          </select>
+        </div>
+
         {/* Uploaded real image preview */}
         {editor.coverImageUrl && (
-          <div className="cover-upload-preview">
+          <div className="cover-upload-preview" style={{ aspectRatio: editor.coverAspect.replace("-", "/") }}>
             <img
               src={editor.coverImageUrl}
               alt="Обложка статьи"
@@ -182,30 +221,13 @@ export function EditorSettingsRail({ editor }: Props) {
             <button
               className="cover-upload-preview__remove"
               type="button"
-              title="Удалить загруженное изображение"
+              title="Удалить изображение"
               onClick={() => {
-                // Remove uploaded URL — user can pick a preset instead
-                editor.pickCover("journal");
+                editor.removeCover();
               }}
             >
               <Icon name="x" />
             </button>
-          </div>
-        )}
-
-        {/* CSS-preset grid (hidden while real image is active) */}
-        {!editor.coverImageUrl && (
-          <div className="cover-presets">
-            {editor.scenes.map((scene) => (
-              <button
-                key={scene}
-                className={editor.cover === scene ? "is-active" : ""}
-                type="button"
-                onClick={() => editor.pickCover(scene)}
-              >
-                <ArticleCover cat={editor.cat} cover={scene} />
-              </button>
-            ))}
           </div>
         )}
 
