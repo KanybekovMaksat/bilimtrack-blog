@@ -14,6 +14,7 @@ import "@/shared/styles/blog.css";
 import "@/shared/styles/article.css";
 import "@/shared/styles/admin.css";
 import "@/shared/styles/app.css";
+import "@/pages/landing/landing.css";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

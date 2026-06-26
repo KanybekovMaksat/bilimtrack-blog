@@ -2,8 +2,9 @@ import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
-    <Html lang="ru" data-scroll-behavior="smooth">
+    <Html lang="ru" translate="no" data-scroll-behavior="smooth">
       <Head>
+        <meta name="google" content="notranslate" />
         <link href="https://fonts.googleapis.com" rel="preconnect" />
         <link
           crossOrigin="anonymous"

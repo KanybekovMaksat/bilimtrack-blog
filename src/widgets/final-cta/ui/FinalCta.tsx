@@ -2,30 +2,11 @@ import { useState, type FormEvent } from "react";
 import { blogApi } from "@/shared/api/blog-api";
 import { Button, Icon } from "@/shared/ui";
 
-type OrgType = "school" | "college" | "university" | "other";
-type StudentsCount = "lt100" | "100_300" | "300_1000" | "gt1000";
-
 interface DemoForm {
   name: string;
   contact: string;
   organization: string;
-  orgType: OrgType;
-  studentsCount: StudentsCount;
 }
-
-const ORG_TYPE_OPTIONS: { value: OrgType; label: string }[] = [
-  { value: "school", label: "Школа" },
-  { value: "college", label: "Колледж" },
-  { value: "university", label: "Университет" },
-  { value: "other", label: "Другое" },
-];
-
-const STUDENTS_OPTIONS: { value: StudentsCount; label: string }[] = [
-  { value: "lt100", label: "до 100" },
-  { value: "100_300", label: "100–300" },
-  { value: "300_1000", label: "300–1000" },
-  { value: "gt1000", label: "свыше 1000" },
-];
 
 /** Full-width conversion CTA with demo request form (anchor #demo). */
 export function FinalCta() {
@@ -33,8 +14,6 @@ export function FinalCta() {
     name: "",
     contact: "",
     organization: "",
-    orgType: "school",
-    studentsCount: "100_300",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isDone, setIsDone] = useState(false);
@@ -62,8 +41,6 @@ export function FinalCta() {
         name: form.name.trim(),
         contact: form.contact.trim(),
         organization: form.organization.trim(),
-        orgType: form.orgType,
-        studentsCount: form.studentsCount,
         source: "blog",
       });
 
@@ -87,12 +64,8 @@ export function FinalCta() {
   return (
     <section className="cta-final" id="demo">
       <div className="cta-final__inner">
-        <span className="cta-final__proof">
-          <Icon name="users" />
-          Уже <b>340 организаций</b> перешли на Bilimtrack
-        </span>
         <h2>
-          Переведите свою организацию на цифровое управление
+          Отцифруйте свое учебное заведение
         </h2>
         <p>
           Расписание, журнал, оплата и общение с родителями в одной системе.{" "}
@@ -115,7 +88,7 @@ export function FinalCta() {
                 name="name"
                 type="text"
                 required
-                placeholder="Ваше имя *"
+                placeholder="ФИО *"
                 value={form.name}
                 onChange={handleChange}
                 className="cta-final__input"
@@ -124,7 +97,7 @@ export function FinalCta() {
                 name="contact"
                 type="text"
                 required
-                placeholder="Телефон или e-mail *"
+                placeholder="Номер телефона *"
                 value={form.contact}
                 onChange={handleChange}
                 className="cta-final__input"
@@ -133,35 +106,11 @@ export function FinalCta() {
                 name="organization"
                 type="text"
                 required
-                placeholder="Название организации *"
+                placeholder="Название учебного заведения *"
                 value={form.organization}
                 onChange={handleChange}
                 className="cta-final__input"
               />
-              <select
-                name="orgType"
-                value={form.orgType}
-                onChange={handleChange}
-                className="cta-final__input"
-              >
-                {ORG_TYPE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="studentsCount"
-                value={form.studentsCount}
-                onChange={handleChange}
-                className="cta-final__input"
-              >
-                {STUDENTS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label} учащихся
-                  </option>
-                ))}
-              </select>
             </div>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? "Отправляем..." : "Получить демо"}
@@ -170,20 +119,6 @@ export function FinalCta() {
           </form>
         )}
 
-        <div className="cta-final__stats">
-          <div className="cta-final__stat">
-            <div className="num">340+</div>
-            <span className="lbl">школ, колледжей и вузов</span>
-          </div>
-          <div className="cta-final__stat">
-            <div className="num">−70%</div>
-            <span className="lbl">бумажной отчётности</span>
-          </div>
-          <div className="cta-final__stat">
-            <div className="num">2–3 дня</div>
-            <span className="lbl">на сборку расписания</span>
-          </div>
-        </div>
       </div>
 
       <style>{`

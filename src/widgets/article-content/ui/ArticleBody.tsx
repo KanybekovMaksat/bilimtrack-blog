@@ -34,7 +34,7 @@ export function ArticleBody({ slug, content, articleId }: ArticleBodyProps) {
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: content }}
       />
-      <LeadMagnet slug={slug} articleId={articleId} />
+      {/* <LeadMagnet slug={slug} articleId={articleId} /> */}
     </div>
   );
 }

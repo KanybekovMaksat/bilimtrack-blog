@@ -17,7 +17,7 @@ export function SiteHeader({ activeHref = "/blog" }: SiteHeaderProps) {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <NextLink aria-label="Bilimtrack" className="brand" href="/blog">
+        <NextLink aria-label="Bilimtrack" className="brand" href="/">
           <img alt="" src="/logo-mark.png" />
           <span className="brand__name">Bilimtrack</span>
         </NextLink>
@@ -33,20 +33,8 @@ export function SiteHeader({ activeHref = "/blog" }: SiteHeaderProps) {
           ))}
         </nav>
         <span className="header-spacer" />
-        <div className="lang-selector">
-          {(["ru", "ky", "en"] as const).map((l) => (
-            <NextLink
-              key={l}
-              href={router.asPath}
-              locale={l}
-              className={cn("lang-btn", router.locale === l && "is-active")}
-            >
-              {l.toUpperCase()}
-            </NextLink>
-          ))}
-        </div>
         <Button href={siteConfig.demoHref} size="sm">
-          Получить демо
+          Посмотреть демо
           <Icon name="chevron-right" />
         </Button>
       </div>

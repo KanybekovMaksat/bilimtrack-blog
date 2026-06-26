@@ -6,8 +6,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  skipTrailingSlashRedirect: true,
   i18n: {
-    locales: ["ru", "ky", "en"],
+    locales: ["ru"],
     defaultLocale: "ru",
     localeDetection: false,
   },

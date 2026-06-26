@@ -1,0 +1,49 @@
+/* ============================================================
+   LANDING — scoped styles
+   Everything is nested under `.landing-root` so the ported
+   bilimtrack-landing visuals never leak into (or get overridden
+   by) the rest of the blog, which runs on HeroUI's own theme.
+   ============================================================ */
+
+/* Tailwind v4 leaves a bare `border` / `border-b` at `currentColor`.
+   The original landing reset every element's border to a soft neutral
+   (theme token `--border` = rgba(0,0,0,.08)). Reproduce that with a
+   ZERO-specificity rule (:where) so any explicit `border-*` utility
+   still wins, no matter the stylesheet order. */
+:where(.landing-root) *,
+:where(.landing-root) ::before,
+:where(.landing-root) ::after {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Brand gradient headline text (Hero). */
+.landing-root .text-gradient {
+  background-image: linear-gradient(to right, #2563eb, #4f46e5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Frosted-glass card surface. */
+.landing-root .glass {
+  background-color: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Gentle float used by a couple of decorative hero elements. */
+.landing-root .animate-float {
+  animation: landing-float 6s ease-in-out infinite;
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}

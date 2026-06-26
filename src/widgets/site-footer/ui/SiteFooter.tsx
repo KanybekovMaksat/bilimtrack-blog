@@ -22,7 +22,6 @@ export function SiteFooter() {
             </NextLink>
           ))}
         </nav>
-        <span className="site-footer__legal">{siteConfig.legal}</span>
       </div>
     </footer>
   );

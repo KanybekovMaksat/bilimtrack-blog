@@ -169,8 +169,8 @@ export const blogApi = {
     name: string;
     contact: string;
     organization: string;
-    orgType: string;
-    studentsCount: string;
+    orgType?: string;
+    studentsCount?: string;
     source?: string;
     sourceArticle?: string;
   }) =>
@@ -274,7 +274,7 @@ export const cmsApi = {
   uploadCoverImage: async (token: string, file: File): Promise<{ url: string } | null> => {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetchWithAuth(`${BASE}/cms/media/`, {
+    const res = await fetchWithAuth(`${BASE}/cms/media/upload/`, {
       method: "POST",
       body: formData,
     });

@@ -55,8 +55,6 @@ export function LeadMagnet({ slug, articleId }: LeadMagnetProps) {
         name: v,
         contact: v,
         organization: "—",
-        orgType: "other",
-        studentsCount: "lt100",
         source: "blog",
         ...(articleId ? { sourceArticle: articleId } : {}),
       });

@@ -62,9 +62,23 @@ export function ArticlePage({ article, popular }: ArticlePageProps) {
       <Head>
         <title>{`${article.title} — Блог Bilimtrack`}</title>
         <meta content={article.excerpt} name="description" />
+        <link href={`${siteConfig.url}/blog/${article.slug}`} rel="canonical" />
+
+        {/* Open Graph */}
+        <meta content="article" property="og:type" />
         <meta content={article.title} property="og:title" />
         <meta content={article.excerpt} property="og:description" />
-        <meta content="article" property="og:type" />
+        <meta content={`${siteConfig.url}/blog/${article.slug}`} property="og:url" />
+        <meta content={article.cover || siteConfig.ogImage} property="og:image" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta content={siteConfig.name} property="og:site_name" />
+        
+        {/* Twitter */}
+        <meta content="summary_large_image" name="twitter:card" />
+        <meta content={`${article.title} — Блог Bilimtrack`} name="twitter:title" />
+        <meta content={article.excerpt} name="twitter:description" />
+        <meta content={article.cover || siteConfig.ogImage} name="twitter:image" />
       </Head>
 
       <ReadingProgress targetRef={articleRef} />

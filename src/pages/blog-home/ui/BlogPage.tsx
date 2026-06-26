@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { siteConfig } from "@/shared/config";
 
 import { ArticleGrid } from "@/entities/article";
 import { CAT_LABEL, type CategoryKey } from "@/entities/category";
@@ -38,12 +39,29 @@ export function BlogPage() {
           content="Практические материалы для руководителей учебных организаций."
           name="description"
         />
+        <link href={`${siteConfig.url}/blog`} rel="canonical" />
+        
+        {/* Open Graph */}
+        <meta content="website" property="og:type" />
         <meta content="Блог Bilimtrack" property="og:title" />
         <meta
           content="Практические материалы для руководителей учебных организаций."
           property="og:description"
         />
-        <meta content="website" property="og:type" />
+        <meta content={`${siteConfig.url}/blog`} property="og:url" />
+        <meta content={siteConfig.ogImage} property="og:image" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta content={siteConfig.name} property="og:site_name" />
+        
+        {/* Twitter */}
+        <meta content="summary_large_image" name="twitter:card" />
+        <meta content="Блог Bilimtrack" name="twitter:title" />
+        <meta
+          content="Практические материалы для руководителей учебных организаций."
+          name="twitter:description"
+        />
+        <meta content={siteConfig.ogImage} name="twitter:image" />
       </Head>
 
       <SiteHeader activeHref="/blog" />
