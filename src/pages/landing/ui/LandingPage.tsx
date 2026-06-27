@@ -13,10 +13,10 @@ import { FinalCTASection } from "../sections/FinalCTASection";
 import { FAQSection } from "../sections/FAQSection";
 import { Footer } from "../sections/Footer";
 
-const TITLE = "Bilimtrack — ваше заведение полностью цифровое за одну неделю";
+const TITLE = "Bilimtrack";
 const DESCRIPTION =
   "Цифровая платформа для учебных заведений: электронный журнал, расписание, геймификация, рейтинги. Подключим систему и обучим сотрудников за вас.";
-const OG_IMAGE = `${siteConfig.url}/dashboard.png`;
+const OG_IMAGE = `${siteConfig.url}/cover.png`;
 
 /** `/` — the marketing landing page (ported from bilimtrack-landing). */
 export function LandingPage() {
@@ -39,7 +39,7 @@ export function LandingPage() {
         <meta content={DESCRIPTION} property="og:description" />
         <meta content={OG_IMAGE} property="og:image" />
         <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
+        <meta property="og:image:height" content="675" />
         <meta
           content="Bilimtrack — система управления обучением"
           property="og:image:alt"
