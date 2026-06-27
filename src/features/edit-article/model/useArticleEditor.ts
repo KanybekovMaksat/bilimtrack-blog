@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/router";
-import { useCreateBlockNote } from "@blocknote/react";
+import { BlockNoteEditor, type PartialBlock } from "@blocknote/core";
 
 import { type CoverScene } from "@/entities/article";
 import type { ArticleCategory } from "@/entities/category";
@@ -179,8 +179,41 @@ export function useArticleEditor() {
   const [initialHtml, setInitialHtml] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
 
-  const blockNote = useCreateBlockNote();
-  const [editorInitialized, setEditorInitialized] = useState(false);
+  const [initialBlocks, setInitialBlocks] = useState<PartialBlock[] | undefined | "loading">("loading");
+
+  useEffect(() => {
+    if (!isReady) return;
+    async function init() {
+      if (initialHtml) {
+        const temp = BlockNoteEditor.create();
+        const blocks = await temp.tryParseHTMLToBlocks(initialHtml);
+        setInitialBlocks(blocks);
+      } else {
+        setInitialBlocks(undefined);
+      }
+    }
+    init();
+  }, [initialHtml, isReady]);
+
+  const blockNote = useMemo(() => {
+    if (initialBlocks === "loading") return undefined;
+    return BlockNoteEditor.create({
+      initialContent: initialBlocks,
+      uploadFile: async (file: File) => {
+        const token = localStorage.getItem("cms_token");
+        if (!token) return "";
+        try {
+          const result = await cmsApi.uploadCoverImage(token, file);
+          return result?.url || "";
+        } catch (err) {
+          console.error("Editor image upload error:", err);
+          return "";
+        }
+      },
+    });
+  }, [initialBlocks]);
+
+  const editorInitialized = blockNote !== undefined;
 
   const [toast, setToast] = useState<{
     show: boolean;
@@ -192,19 +225,6 @@ export function useArticleEditor() {
   const wordLabel = `${words} ${pluralWords(words)}`;
   const seoTitleLen = (seoTitle || title).length;
   const seoDescLen = (seoDesc || excerpt).length;
-
-  useEffect(() => {
-    async function initEditor() {
-      if (initialHtml && !editorInitialized) {
-        const blocks = await blockNote.tryParseHTMLToBlocks(initialHtml);
-        blockNote.replaceBlocks(blockNote.document, blocks);
-        setEditorInitialized(true);
-      } else if (!initialHtml && isReady && !editorInitialized) {
-        setEditorInitialized(true);
-      }
-    }
-    initEditor();
-  }, [blockNote, initialHtml, isReady, editorInitialized]);
 
   // Auto-resize textareas
   useEffect(() => {
@@ -238,8 +258,9 @@ export function useArticleEditor() {
   }, []);
 
   const getEditorHTML = useCallback(async () => {
+    if (!blockNote) return initialHtml;
     return blockNote.blocksToFullHTML(blockNote.document);
-  }, [blockNote]);
+  }, [blockNote, initialHtml]);
 
   const snapshot = async (): Promise<Snapshot> => {
     const bodyHtml = await getEditorHTML();

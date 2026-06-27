@@ -261,10 +261,10 @@ export const cmsApi = {
     fetchWithAuth(`${BASE}/cms/articles/${id}/archive/`, { method: "POST" }),
 
   /**
-   * POST /cms/media/upload/ — upload a cover image.
+   * POST /cms/media/ — upload a cover image.
    *
    * TODO: Заменить на реальный API когда бэкенд будет готов.
-   *       Эндпоинт: POST ${BASE}/cms/media/upload/
+   *       Эндпоинт: POST ${BASE}/cms/media/
    *       Тело: FormData { file: File }
    *       Ответ: { data: { url: string } }
    *
@@ -274,7 +274,7 @@ export const cmsApi = {
   uploadCoverImage: async (token: string, file: File): Promise<{ url: string } | null> => {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetchWithAuth(`${BASE}/cms/media/upload/`, {
+    const res = await fetchWithAuth(`${BASE}/cms/media/`, {
       method: "POST",
       body: formData,
     });
